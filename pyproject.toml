@@ -30,8 +30,12 @@ timm = [
     "timm>=1.0",
     "torch",
     "torchvision",
-    "pacmap>=0.8",
-    "umap-learn>=0.5",
+    # Dimensionality reduction: the plugin materializes pacmap/umap-reduced tables in its OWN
+    # provisioned venv, so it needs tlc's PacmapTable/UmapTable (pacmap / umap-learn / joblib /
+    # scikit-learn / annoy). Go through the `3lc[pacmap,umap]` extras rather than raw pins so the
+    # full dep set and version bounds track the monorepo. `[shared]` brings `3lc[pandas]`; unioned
+    # here that yields `3lc[pandas,pacmap,umap]` in the venv. Mirrors the host's spec in 3lc-compute.
+    "3lc[pacmap,umap]>=3.0.0,<4.0.0",
 ]
 
 # Advertised for the optional installed-package / index-install discovery path. Value = the import

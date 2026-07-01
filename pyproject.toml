@@ -1,4 +1,4 @@
-# 3lc-plugin-timm — the timm (PyTorch Image Models) training plugin for the 3LC compute service,
+# 3lc-compute-plugin-timm — the timm (PyTorch Image Models) training plugin for the 3LC compute service,
 # as a standalone single-plugin distribution with its own heavy timm/torch stack version cadence.
 #
 # Isolation contract: this distribution is NEVER installed into the host venv. The host discovers
@@ -11,8 +11,8 @@ requires = ["hatchling"]
 build-backend = "hatchling.build"
 
 [project]
-name = "3lc-plugin-timm"
-version = "1.0.0"
+name = "3lc-compute-plugin-timm"
+version = "0.1.0"
 description = "timm image-classification training plugin for the 3LC compute service (venv-isolated)."
 requires-python = ">=3.10"
 # Apache-2.0, matching 3lc-plugin-sdk. Full text in ./LICENSE.
@@ -24,7 +24,7 @@ dependencies = [
 ]
 
 # The plugin's heavy stack — installed ONLY into the provisioned venv (uv sync --extra timm, or
-# 3lc-plugin-timm[timm]==<ver> from an index).
+# 3lc-compute-plugin-timm[timm]==<ver> from an index).
 [project.optional-dependencies]
 timm = [
     "timm>=1.0",

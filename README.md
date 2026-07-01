@@ -1,4 +1,4 @@
-# 3lc-plugin-timm
+# 3lc-compute-plugin-timm
 
 The **timm training** plugin for the [3LC compute service](https://github.com/3lc-ai) — fine-tune
 any of 1,000+ pretrained image classifiers from [timm](https://github.com/huggingface/pytorch-image-models)
@@ -13,10 +13,10 @@ The host never installs this distribution into its own venv. It is delivered thr
 three plugin Sources, all converging on the same out-of-process worker in a managed venv:
 
 - **Folder Source (dev):** point the service at this repo's `src/`
-  (`--plugin-dir ../3lc-plugin-timm/src` or `TLC_COMPUTE_EXTERNAL_PLUGIN_DIRS`). Provisioning runs
+  (`--plugin-dir ../3lc-compute-plugin-timm/src` or `TLC_COMPUTE_EXTERNAL_PLUGIN_DIRS`). Provisioning runs
   `uv sync --extra timm` against this repo.
-- **Index:** `3lc-plugin-timm[timm]==<ver>`.
-- **GitHub:** `github:3lc-ai/3lc-plugin-timm@v<ver>`.
+- **Index:** `3lc-compute-plugin-timm[timm]==<ver>`.
+- **GitHub:** `github:3lc-ai/3lc-compute-plugin-timm@v<ver>`.
 
 The heavy stack (`timm`, `torch`, `torchvision`, `pacmap`, `umap-learn`) lives behind the **`[timm]`
 extra** named by `runtime.provision_extra` in `src/tlc_plugin_timm/plugin.toml` and is installed

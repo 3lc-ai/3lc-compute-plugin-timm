@@ -303,10 +303,9 @@
         <!-- Pretrained Model URL (fine-tune from existing checkpoint) -->
         <div class="form-group" style="margin-top:10px">
           <label class="form-label" for="tm-pretrained-url">Pretrained Model URL <span class="text-muted">(optional — fine-tune from existing checkpoint)</span></label>
-          <div style="display:flex;gap:6px">
-            <input type="text" id="tm-pretrained-url" class="form-control plugin-mono"
-                   placeholder="Path to .pt checkpoint (leave empty for ImageNet pretrained)">
-          </div>
+          <!-- SDK data-source widget (rendered at init): text input keeps id tm-pretrained-url,
+               plus a Browse… panel backed by the SDK's /browse route. -->
+          <div id="tm-pretrained-ds"></div>
         </div>
 
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
@@ -1275,6 +1274,19 @@ function _tmBindAutoSave() {
   document.getElementById("tm-use-latest").addEventListener("change", tmScheduleAutoSave);
 }
 
+
+// ── Data Source Init ──────────────────────────────────────────
+// The SDK's shared data-source picker for the pretrained checkpoint: the rendered
+// text input keeps the id "tm-pretrained-url", so config save/restore reads and
+// writes it exactly as before.
+(function() {
+  document.getElementById("tm-pretrained-ds").innerHTML = _tlcDataSourceHtml("tm-pretrained-url", {
+    placeholder: "Path to .pt checkpoint (leave empty for ImageNet pretrained)",
+    accept: "*.pt,*.pth",
+    mode: "file",
+  });
+  _tlcBindDataSource("tm-pretrained-url", TM_COMPUTE_URL, "timm", { accept: "*.pt,*.pth", mode: "file" });
+})();
 
 // ── Alias Override Init ───────────────────────────────────────
 (function() {

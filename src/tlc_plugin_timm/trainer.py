@@ -15,6 +15,7 @@ import numpy as np
 import torch
 import torch.nn as nn
 import torch.nn.functional as F  # noqa: N812  (PyTorch's conventional alias)
+from tlc_plugin_sdk.shared.url_utils import normalize_url
 from torch.utils.data import DataLoader, Dataset
 
 logger = logging.getLogger(__name__)
@@ -184,7 +185,9 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
         val_table = train_table
 
     # ── Create timm model ──
-    pretrained_url = params.get("pretrained_model_url", "").strip()
+    # normalize_url expands a user-typed ``~`` (protocol URLs and alias tokens pass through
+    # untouched); without it a tilde path reaches torch.load literally and fails opaquely.
+    pretrained_url = normalize_url(params.get("pretrained_model_url", "").strip())
     copy_model_to_run = _to_bool(params.get("copy_model_to_run", True))
 
     on_status(f"Creating model: {model_name} (num_classes={num_classes})")
@@ -657,7 +660,7 @@ def collect(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str,
         val_table = train_table
 
     # Create model (pretrained, no training)
-    pretrained_url = params.get("pretrained_model_url", "").strip()
+    pretrained_url = normalize_url(params.get("pretrained_model_url", "").strip())
     if pretrained_url:
         on_status(f"Loading model from: {pretrained_url}")
         resolved_path = pretrained_url

@@ -1009,7 +1009,13 @@ function tmStartTraining() {
       localStorage.setItem(_TM_STORAGE_KEY, resp.id);
       tmLoadConfigs();
 
-      _tmPost("/api/plugins/timm/run", { config_id: resp.id })
+      // project_name attributes the job in the generic Queue & Progress panel —
+      // the host reads it from the run body only; the value in the saved config
+      // never reaches the job record.
+      _tmPost("/api/plugins/timm/run", {
+        config_id: resp.id,
+        project_name: (document.getElementById("tm-3lc-project").value || "").trim(),
+      })
         .then(function(trainResp) {
           if (trainResp.error) { tmLog("Error: " + trainResp.error); return; }
           tmLog("timm job submitted: " + trainResp.job_id);

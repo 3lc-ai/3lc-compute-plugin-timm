@@ -14,6 +14,7 @@ build-backend = "hatchling.build"
 name = "3lc-compute-plugin-timm"
 version = "0.2.0"
 description = "timm image-classification training plugin for the 3LC compute service."
+readme = "README-wheel.md"
 requires-python = ">=3.10"
 # Apache-2.0, matching 3lc-compute-plugin-sdk. Full text in ./LICENSE.
 license = "Apache-2.0"

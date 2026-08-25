@@ -56,6 +56,17 @@
 /* Completed job links */
 .tm-run-link { font-size: 10px; text-decoration: none; color: var(--accent); }
 .tm-run-link:hover { text-decoration: underline; }
+/* Compact running-state banner (seeded from the host job list on mount) */
+.tm-live-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 14px; padding: 10px 14px; font-size: 12px;
+  background: var(--accent-light); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: var(--radius-lg, 8px);
+}
+.tm-live-banner .tm-live-title { font-weight: 600; }
+.tm-live-banner .tm-live-detail { color: var(--text-muted); }
+.tm-live-banner .tm-live-error { color: var(--danger-color); }
+.tm-live-banner .tm-live-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }
 </style>
 
 <div class="plugin-page">
@@ -93,6 +104,18 @@
     <div class="plugin-workflow-step"><span class="num">2</span> Pick model</div>
     <div class="plugin-workflow-step"><span class="num">3</span> Train</div>
   </div>
+</div>
+
+<!-- ── Live-job banner: the fragment is a launcher, the Queue is the durable view ── -->
+<div id="tm-live-banner" class="tm-live-banner" style="display:none">
+  <span id="tm-live-status" class="tm-queue-status plugin-status-running">running</span>
+  <span id="tm-live-title" class="tm-live-title">timm job</span>
+  <span id="tm-live-detail" class="tm-live-detail"></span>
+  <span id="tm-live-error" class="tm-live-error" style="display:none"></span>
+  <span class="tm-live-actions">
+    <a id="tm-live-open" href="#" class="btn btn-sm btn-secondary" style="display:none">Open</a>
+    <span class="text-muted" style="font-size:10px">Watch it in the Queue &amp; Progress panel</span>
+  </span>
 </div>
 
 <!-- ── Config bar (replaces sidebar) ──────────────────────── -->
@@ -568,20 +591,99 @@ function tmInitSocket() {
     }
   });
 
-  tmSocket.on("job_completed", function(data) {
-    tmLog("Job completed! Project: " + (data.tlc_project_name || "(unknown)"));
-    tmFinishCurrentJob("completed", data.tlc_project_name);
-    tmLoadConfigs();
-  });
-
-  tmSocket.on("job_failed", function(data) {
-    tmLog("Job FAILED: " + data.error);
-    tmFinishCurrentJob("failed", null);
-  });
-
   tmSocket.on("queue_update", function(data) {
     tmRenderQueue(data);
   });
+}
+
+// ── Generic job lifecycle (host job_update channel) ─────────────────────
+// Completion and failure are NOT plugin events: the plugin reports the run URL via
+// ctx.result and failures by raising, and the host's terminal job_update carries
+// run_url / error. The SDK's PluginJobs client (auto-injected by the host) tracks it.
+var _tmUntrack = null;
+
+function _tmTrackJob(jobId) {
+  if (!jobId || typeof PluginJobs === "undefined") return;
+  if (_tmUntrack) { _tmUntrack(); _tmUntrack = null; }
+  _tmUntrack = PluginJobs.track("/timm", jobId, {
+    onUpdate: function(job) { _tmRenderLiveBanner(job); },
+    onDone: function(job) {
+      _tmUntrack = null;
+      var status = job.status || "completed";
+      if (status === "completed") {
+        tmLog("Job completed." + (job.run_url ? " Run: " + job.run_url : ""));
+      } else {
+        tmLog("Job " + status + ".");
+      }
+      tmFinishCurrentJob(status, job);
+      tmLoadConfigs();
+    },
+    onError: function(job) {
+      _tmUntrack = null;
+      tmLog("Job FAILED: " + (job.error || job.subtitle || "unknown error"));
+      tmFinishCurrentJob("failed", job);
+    },
+  });
+}
+
+// Where the Open button goes for a generic job record: the run detail page when the
+// job reported a run URL, else the project page when one is known.
+function _tmOpenHref(job, projectName) {
+  if (job && job.run_url) return "/runs/" + encodeURIComponent(job.run_url);
+  if (projectName) return "/projects/" + encodeURIComponent(projectName);
+  return "";
+}
+
+// Compact "job running — watch it in the Queue" state above the launch form. Fed by
+// the seed-on-mount list call and every job_update while the job is live; hidden
+// again once the job reaches a terminal state (the Queue panel is the durable view).
+function _tmRenderLiveBanner(job) {
+  var banner = document.getElementById("tm-live-banner");
+  if (!banner || !job) return;
+  var live = job.status === "queued" || job.status === "running";
+  if (!live) { banner.style.display = "none"; return; }
+  banner.style.display = "flex";
+  var statusEl = document.getElementById("tm-live-status");
+  statusEl.textContent = job.status;
+  statusEl.className = "tm-queue-status plugin-status-" + job.status;
+  document.getElementById("tm-live-title").textContent = job.title || "timm job";
+  var p = job.progress || {};
+  var detail = [];
+  if (p.label) detail.push(p.label);
+  if (typeof p.percent === "number" && p.percent >= 0) detail.push(Math.round(p.percent) + "%");
+  var t = p.timing || {};
+  if (t.eta_s !== undefined && t.eta_s !== null) detail.push("ETA " + _tmFmtDuration(t.eta_s));
+  document.getElementById("tm-live-detail").textContent = detail.join(" · ");
+  document.getElementById("tm-live-error").style.display = "none";
+  var openEl = document.getElementById("tm-live-open");
+  var href = _tmOpenHref(job, null);
+  openEl.style.display = href ? "" : "none";
+  if (href) openEl.href = href;
+}
+
+// Seed on mount: the fragment is torn down on navigation and job_update is live-only,
+// so ask the host which timm jobs are already queued/running and render their state
+// instead of an empty form over a live job.
+function _tmSeedFromHost() {
+  if (typeof PluginJobs === "undefined" || !PluginJobs.list) return;
+  PluginJobs.list("timm").then(function(jobs) {
+    var live = (jobs || []).filter(function(j) { return j.status === "queued" || j.status === "running"; });
+    if (!live.length) return;
+    var job = live[0];
+    _tmRenderLiveBanner(job);
+    tmShowCurrentJob(job.id, job.title || "timm job");
+    var statusEl = document.getElementById("tm-current-status");
+    statusEl.textContent = job.status;
+    statusEl.className = "tm-queue-status plugin-status-" + job.status;
+    var p = job.progress || {};
+    if (typeof p.percent === "number" && p.percent >= 0) {
+      document.getElementById("tm-epoch-bar").style.width = p.percent.toFixed(1) + "%";
+      document.getElementById("tm-pct-label").textContent = Math.round(p.percent) + "%";
+    }
+    if (p.label) document.getElementById("tm-epoch-label").textContent = p.label;
+    tmLog("Resumed tracking " + job.status + " job " + String(job.id).slice(0, 8));
+    _tmTrackJob(job.id);
+  }).catch(function(e) { tmLog("Could not list jobs: " + e); });
 }
 
 // ── Logging ──────────────────────────────────────────────────
@@ -1020,6 +1122,7 @@ function tmStartTraining() {
           if (trainResp.error) { tmLog("Error: " + trainResp.error); return; }
           tmLog("timm job submitted: " + trainResp.job_id);
           tmShowCurrentJob(trainResp.job_id, _tmJobLabel(data));
+          _tmTrackJob(trainResp.job_id);
         })
         .catch(function(e) { tmLog("Error starting: " + e); });
     })
@@ -1079,21 +1182,32 @@ function tmShowCurrentJob(jobId, label) {
   if (label) { document.getElementById("tm-current-label").textContent = label; }
 }
 
-// Mark the current-job panel terminal (completed / failed / cancelled).
-function tmFinishCurrentJob(status, projectName) {
+// Mark the current-job panel terminal (completed / failed / cancelled) from the
+// generic job record: `run_url` drives the Open link, `error` the failure text.
+function tmFinishCurrentJob(status, job) {
+  job = job || {};
   var statusEl = document.getElementById("tm-current-status");
   statusEl.textContent = status;
   statusEl.className = "tm-queue-status plugin-status-" + status;
   document.getElementById("tm-stop-btn").style.display = "none";
   var runLinkEl = document.getElementById("tm-current-run-link");
   if (runLinkEl) {
-    if (projectName) {
-      runLinkEl.href = "/projects/" + encodeURIComponent(projectName);
+    var projectName = (document.getElementById("tm-3lc-project").value || "").trim();
+    var href = _tmOpenHref(job, projectName);
+    if (href) {
+      runLinkEl.href = href;
       runLinkEl.style.display = "inline";
     } else {
       runLinkEl.style.display = "none";
     }
   }
+  var infoEl = document.getElementById("tm-current-info");
+  if (infoEl) {
+    var errText = status === "failed" ? (job.error || job.subtitle || "") : "";
+    infoEl.textContent = errText;
+    infoEl.style.color = errText ? "var(--danger-color)" : "";
+  }
+  _tmRenderLiveBanner(job.status ? job : { status: status });
   _tmCurrentJobId = null;
 }
 
@@ -1316,6 +1430,7 @@ function _tmBindAutoSave() {
 // ── Init ─────────────────────────────────────────────────────
 (function() {
   tmInitSocket();
+  _tmSeedFromHost();
   tmLoadModels();
   tmLoadConfigs();
   tmLoadQueue();

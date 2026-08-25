@@ -3,11 +3,13 @@
 """timm plugin — sidebar plugin for image classification training with timm models.
 
 Job execution uses the unified ``run_job(ctx)`` contract: the host JobManager owns
-the queue / cancel / generic progress, while this plugin re-emits its own ``/timm``
-SocketIO events (``job_status`` / ``epoch_progress`` / ``job_completed`` /
-``job_failed``) via ``ctx.emit`` for its embedded UI. ``ctx.params`` carries the
-``config_id``; the config store resolves it to the frozen training params, exactly
-as the old runner did.
+the queue / cancel / generic progress, while this plugin emits its own ``/timm``
+SocketIO events (``job_status`` / ``epoch_progress``) via ``ctx.emit`` for its
+embedded UI's rich training view. The job *outcome* is generic: the run URL is
+reported with ``ctx.result`` and failures by raising (``ctx.fail`` for validation),
+so the terminal ``job_update`` carries ``run_url`` / ``error`` and the fragment reads
+them through ``PluginJobs.track``. ``ctx.params`` carries the ``config_id``; the
+config store resolves it to the frozen training params, exactly as the old runner did.
 """
 
 from __future__ import annotations
@@ -66,12 +68,13 @@ class TimmPlugin(ComputePlugin):
         the 3LC project / run name are auto-derived. Train-vs-collect is selected by
         the config's ``mode`` (``train`` | ``collect``), exactly as before.
 
-        Driven entirely by ``ctx``: ``ctx.progress`` / ``ctx.metric`` / ``ctx.log``
-        feed the generic Queue & Progress panel (percent + label only — no
-        training-specific fields), while ``ctx.emit`` re-broadcasts the plugin's own
-        ``/timm`` events (``job_status`` / ``epoch_progress`` / ``job_completed`` /
-        ``job_failed``) for the embedded UI. Cancellation is cooperative via
-        ``ctx.cancelled``.
+        Driven entirely by ``ctx``: ``ctx.progress`` / ``ctx.log`` feed the generic
+        Queue & Progress panel (percent + label only — no training-specific fields)
+        and ``ctx.result`` records the run URL the Open button opens, while
+        ``ctx.emit`` broadcasts the plugin's own ``/timm`` events (``job_status`` /
+        ``epoch_progress``) for the embedded UI's rich view. Failures propagate as
+        exceptions (validation via ``ctx.fail``) and land on the generic record's
+        ``error``. Cancellation is cooperative via ``ctx.cancelled``.
 
         Args:
             ctx: Host-provided job context. ``ctx.params`` carries ``config_id`` (and
@@ -93,12 +96,12 @@ class TimmPlugin(ComputePlugin):
         if config_id:
             config = config_store().get_config(config_id)
         if config is None:
-            msg = "Config not found" if config_id else "config_id is required"
-            ctx.emit("job_failed", {"job_id": ctx.job_id, "error": msg})
-            raise ValueError(msg)
+            ctx.fail("Config not found" if config_id else "config_id is required")
 
         mode = config.mode or "train"
         mode_label = "Collection" if mode == "collect" else "Training"
+        # Custom payloads carry job_id explicitly: the host relays only the payload of a
+        # custom event (not the envelope the sink stamps), and the fragment keys on it.
         ctx.emit("job_status", {"job_id": ctx.job_id, "status": "running", "message": f"{mode_label} started"})
 
         # Resolve .latest() if requested.
@@ -247,26 +250,26 @@ class TimmPlugin(ComputePlugin):
             trainer_fn = timm_collect if mode == "collect" else timm_train
             result = trainer_fn(tables, params, callbacks)
 
+            # The run is the one artifact the generic Open button opens — recorded on
+            # the host job record, so it survives the fragment being torn down.
             run_url = result.get("run_url")
+            if run_url:
+                ctx.result(str(run_url))
 
             if ctx.cancelled:
                 ctx.emit("job_status", {"job_id": ctx.job_id, "status": "cancelled", "message": "Job cancelled"})
             else:
-                # Generic surface stays percent + label only — final training
-                # metrics (best_val_acc, best_epoch, …) ride the plugin-specific
-                # job_completed event, never ctx.metric.
+                # Generic surface stays percent + label only — no training-specific
+                # metrics (best_val_acc, best_epoch, …) via ctx.metric.
                 ctx.progress(percent=100.0, label="Done")
-                ctx.emit(
-                    "job_completed",
-                    {"job_id": ctx.job_id, "run_url": run_url, "tlc_project_name": tlc_project_name},
-                )
 
             # Update config last_run timestamp.
             config_store().update_last_run(config.id)
 
-        except Exception as e:
+        except Exception:
+            # Propagates to the SDK worker, which reports it as the terminal `error`
+            # event on the generic job record; the traceback stays in the worker log.
             logger.exception("timm run_job failed")
-            ctx.emit("job_failed", {"job_id": ctx.job_id, "error": str(e)})
             raise
         finally:
             if alias_originals:

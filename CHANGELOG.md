@@ -7,7 +7,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
-Nothing yet.
+### Changed
+- Requires plugin SDK `>=0.3.0,<0.4.0`.
+- Job outcome is reported through the generic job channel: the run URL via `ctx.result`, so
+  the Queue & Progress card's **Open** link works for timm jobs; failures propagate as the
+  job's `error` (validation failures such as a missing config carry a clean, user-facing
+  message). The plugin-private `job_completed` / `job_failed` events are gone; the fragment
+  tracks completion and failure on the host's `job_update` channel instead. The rich
+  `job_status` / `epoch_progress` events are unchanged.
+- The plugin page is a launcher and the Queue is the durable view: on (re)mount the fragment
+  asks the host for queued/running timm jobs and shows a compact running-state banner with
+  live progress and an Open link, instead of an empty form over a job that is still running.
+- The fragment's Open link points at the run detail page when the job reported a run URL,
+  falling back to the project page.
 
 ## [0.2.1] - 2026-08-21
 

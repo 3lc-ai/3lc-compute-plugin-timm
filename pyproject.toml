@@ -1,9 +1,10 @@
 # 3lc-compute-plugin-timm — the timm (PyTorch Image Models) training plugin for the 3LC compute service,
 # as a standalone single-plugin distribution with its own heavy timm/torch stack version cadence.
 #
-# Isolation contract: this distribution is NEVER installed into the host venv. The host discovers
-# the plugin via a folder Source pointed at `src/` (dev) or installs it into its OWN managed venv
-# (shop/index/git). The heavy stack lives behind the `[timm]` extra named by the manifest's
+# Isolation contract: this distribution is NEVER installed into the host venv. The host runs the
+# plugin from its OWN managed venv either way — built from a folder Source pointed at `src/` (dev),
+# or materialized from the installed distribution (shop/index/git). The heavy stack lives behind
+# the `[timm]` extra named by the manifest's
 # runtime.provision_extra and is installed ONLY into that provisioned venv. Base `dependencies` is
 # the SDK floor only.
 [build-system]

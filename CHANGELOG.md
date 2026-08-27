@@ -8,7 +8,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
-- Requires plugin SDK `>=0.3.0,<0.4.0`.
+- Requires plugin SDK `3lc-compute-plugin-sdk>=0.3.1,<0.4.0`, pinned without the `[shared]`
+  extra: since SDK 0.3.1 the `3lc` data plane is a base dependency of the SDK, and the extra is a
+  deprecated no-op.
 - Job outcome is reported through the generic job channel: the run URL via `ctx.result`, so
   the Queue & Progress card's **Open** link works for timm jobs; failures propagate as the
   job's `error` (validation failures such as a missing config carry a clean, user-facing

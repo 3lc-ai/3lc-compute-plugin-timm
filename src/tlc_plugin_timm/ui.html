@@ -1111,15 +1111,24 @@ function tmStartTraining() {
       localStorage.setItem(_TM_STORAGE_KEY, resp.id);
       tmLoadConfigs();
 
-      // project_name attributes the job in the generic Queue & Progress panel —
-      // the host reads it from the run body only; the value in the saved config
-      // never reaches the job record.
-      _tmPost("/api/plugins/timm/run", {
+      // Launch through the SDK's PluginJobs client. project_name attributes the job
+      // in the generic Queue & Progress panel — the host reads it from the run body
+      // only; the value in the saved config never reaches the job record. Left blank,
+      // PluginJobs fills it from the launch context (the project page the plugin was
+      // opened from). /run is answered by the host itself (the job is queued, the
+      // worker is spawned later), so authFetch's default timeout is enough here —
+      // the generous _tmFetch timeout is for the worker-proxied routes only.
+      if (typeof PluginJobs === "undefined") { tmLog("Error: job tracker unavailable — reload the page."); return; }
+      PluginJobs.start("timm", {
         config_id: resp.id,
         project_name: (document.getElementById("tm-3lc-project").value || "").trim(),
       })
         .then(function(trainResp) {
-          if (trainResp.error) { tmLog("Error: " + trainResp.error); return; }
+          if (!trainResp || trainResp.error) {
+            tmLog("Error: " + ((trainResp && trainResp.error) || "failed to start job"));
+            return;
+          }
+          if (!trainResp.job_id) { tmLog(_tmNotStartedMessage(trainResp)); return; }
           tmLog("timm job submitted: " + trainResp.job_id);
           tmShowCurrentJob(trainResp.job_id, _tmJobLabel(data));
           _tmTrackJob(trainResp.job_id);
@@ -1145,6 +1154,22 @@ function tmSwapUrls() {
   var v = document.getElementById("tm-val-url");
   var tmp = t.value; t.value = v.value; v.value = tmp;
   tmOnTrainTableChange();
+}
+
+// /run answers {status, provisioning} instead of a job while the plugin's
+// environment is still being built (or its last build failed) — say so, rather
+// than tracking an undefined job id.
+function _tmNotStartedMessage(resp) {
+  var prov = resp.provisioning || {};
+  var state = prov.state || resp.status || "unknown";
+  if (state === "failed") {
+    return "Plugin environment build failed" + (prov.error ? ": " + prov.error : "") +
+      " — see Settings → Plugins.";
+  }
+  if (state === "provisioning" || state === "unprovisioned") {
+    return "Plugin environment is still being set up (" + state + ") — try again in a moment.";
+  }
+  return "Job was not started (status: " + state + ").";
 }
 
 // ── Queue Rendering ──────────────────────────────────────────

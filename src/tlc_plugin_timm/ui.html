@@ -1122,9 +1122,14 @@ function tmStartTraining() {
       // worker is spawned later), so authFetch's default timeout is enough here —
       // the generous _tmFetch timeout is for the worker-proxied routes only.
       if (typeof PluginJobs === "undefined") { tmLog("Error: job tracker unavailable — reload the page."); return; }
+      // project_config rides inline so the run body is self-contained: a remote GPU
+      // worker has no local config store to resolve config_id against (SDK guide,
+      // "Run-body conventions for remote workers"). Harmless locally — the store copy
+      // and this payload are the same frozen config.
       PluginJobs.start("timm", {
         config_id: resp.id,
         project_name: (document.getElementById("tm-3lc-project").value || "").trim(),
+        project_config: Object.assign({}, data, { id: resp.id }),
       })
         .then(function(trainResp) {
           if (!trainResp || trainResp.error) {

@@ -7,12 +7,17 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+## [0.2.5] - 2026-09-10
+
 ### Added
 - The run body carries the frozen training config inline (`project_config`) and `run_job`
   prefers it over the `config_id` store lookup, so a job is self-contained: a worker whose
   store does not hold the config (a fresh machine) can still run it. The store lookup remains
   the fallback for older fragments and direct API calls.
 - The sidebar icon carries the Hugging Face mark, where timm lives.
+
+### Changed
+- Requires plugin SDK `>=0.4.0,<0.5.0` (was `>=0.3.1,<0.4.0`).
 
 ### Fixed
 - Recording `last_run` on the saved config after a finished run is best-effort: it no longer

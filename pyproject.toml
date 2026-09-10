@@ -13,7 +13,7 @@ build-backend = "hatchling.build"
 
 [project]
 name = "3lc-compute-plugin-timm"
-version = "0.2.4"
+version = "0.2.5"
 description = "timm image-classification training plugin for the 3LC compute service."
 readme = "README-wheel.md"
 requires-python = ">=3.10"
@@ -22,7 +22,7 @@ license = "Apache-2.0"
 # Base = the SDK floor ONLY. The heavy stack rides the [timm] extra below and is installed only
 # into the plugin's provisioned venv. The SDK brings the `tlc` data plane (`3lc[pandas]`).
 dependencies = [
-    "3lc-compute-plugin-sdk>=0.3.1,<0.4.0",
+    "3lc-compute-plugin-sdk>=0.4.0,<0.5.0",
 ]
 
 # The plugin's heavy stack — installed ONLY into the provisioned venv (uv sync --extra timm, or

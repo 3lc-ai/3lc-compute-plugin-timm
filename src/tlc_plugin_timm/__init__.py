@@ -14,6 +14,8 @@ config store resolves it to the frozen training params, exactly as the old runne
 
 from __future__ import annotations
 
+import contextlib
+import dataclasses
 import logging
 from pathlib import Path
 from typing import TYPE_CHECKING, Any
@@ -26,6 +28,26 @@ if TYPE_CHECKING:
     from tlc_plugin_sdk.job_context import JobContext
 
 logger = logging.getLogger(__name__)
+
+
+def _config_from_inline(raw: Any, *, log: Any) -> Any:
+    """Build a ``TimmConfig`` from an inline run-body dict, or ``None``.
+
+    Tolerant like the store's own reader: unknown keys are dropped and missing ones
+    default, so an older (or newer) fragment's payload still loads. Anything that is
+    not a non-empty dict — absent, null, wrong type — resolves to ``None`` and the
+    caller falls back to the local store.
+    """
+    if not isinstance(raw, dict) or not raw:
+        return None
+    from tlc_plugin_timm.config_store import TimmConfig
+
+    try:
+        known = {f.name for f in dataclasses.fields(TimmConfig)}
+        return TimmConfig(**{k: v for k, v in raw.items() if k in known})
+    except Exception as exc:
+        log(f"Warning: ignoring invalid inline project_config: {exc}")
+        return None
 
 
 class TimmPlugin(ComputePlugin):
@@ -91,9 +113,12 @@ class TimmPlugin(ComputePlugin):
         params_in = ctx.params
         config_id = str(params_in.get("config_id", "") or "").strip()
 
-        # Resolve config_id → frozen config via the store (as the runner did).
-        config = None
-        if config_id:
+        # Resolve the frozen config. An inline ``project_config`` wins: a remote worker
+        # on a GPU node has no controller-local store, so the run body must be
+        # self-contained (SDK guide, "Run-body conventions for remote workers"). The
+        # store lookup stays as the fallback for older fragments / direct API calls.
+        config = _config_from_inline(params_in.get("project_config"), log=ctx.log)
+        if config is None and config_id:
             config = config_store().get_config(config_id)
         if config is None:
             ctx.fail("Config not found" if config_id else "config_id is required")
@@ -263,8 +288,10 @@ class TimmPlugin(ComputePlugin):
                 # metrics (best_val_acc, best_epoch, …) via ctx.metric.
                 ctx.progress(percent=100.0, label="Done")
 
-            # Update config last_run timestamp.
-            config_store().update_last_run(config.id)
+            # Best-effort bookkeeping: on a remote worker the store exists but is empty (the
+            # config arrived inline) — it must not fail the finished job.
+            with contextlib.suppress(Exception):
+                config_store().update_last_run(config.id)
 
         except Exception:
             # Propagates to the SDK worker, which reports it as the terminal `error`

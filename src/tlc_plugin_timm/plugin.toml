@@ -4,7 +4,7 @@
 id = "timm"
 name = "timm"
 description = "Fine-tune any of 1,000+ pretrained image classifiers from timm (PyTorch Image Models) with per-sample metrics and embedding collection."
-version = "0.2.4"
+version = "0.2.6"
 min_service_version = "0.1.0"
 icon = "◆"
 # timm lives at Hugging Face, and has no mark of its own, so it carries theirs — the same one

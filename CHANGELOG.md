@@ -9,8 +9,12 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 - Require plugin SDK `>=0.5.0,<0.6.0` and lock the private POC build.
+- Resolve the plugin SDK from the explicit `staging` index declared in `pyproject.toml`; developers and CI
+  need only `UV_INDEX_STAGING_USERNAME` / `UV_INDEX_STAGING_PASSWORD`.
 - Stamp and validate package and manifest versions together before publication.
 - Manual builds publish only to private CloudRepo when explicitly requested.
+- Runs are created under the project root the job carries (`ctx.project_root_url`), not the worker's
+  configured root.
 
 
 ## [0.2.6] - 2026-09-11

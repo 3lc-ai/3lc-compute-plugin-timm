@@ -4,15 +4,15 @@
 
 from __future__ import annotations
 
+import sys
 import threading
+import types
 from pathlib import Path
 from typing import Any
 
 import pytest
-import torch.nn as nn
 from tlc_plugin_sdk import JobContext
 
-import tlc_plugin_timm.trainer as trainer
 from tlc_plugin_timm import TimmPlugin
 
 _INLINE_CONFIG = {
@@ -36,7 +36,12 @@ def _run_job_params(monkeypatch: pytest.MonkeyPatch, ctx: Any) -> dict[str, Any]
         captured.update(params)
         return {}
 
-    monkeypatch.setattr(trainer, "train", fake_train)
+    # The trainer imports torch at module level; CI installs the plugin without it. run_job imports the
+    # trainer lazily, so a stand-in module is enough to see the params it hands over.
+    stub = types.ModuleType("tlc_plugin_timm.trainer")
+    vars(stub)["train"] = fake_train
+    vars(stub)["collect"] = fake_train
+    monkeypatch.setitem(sys.modules, "tlc_plugin_timm.trainer", stub)
     TimmPlugin().run_job(ctx)
     return captured
 
@@ -81,6 +86,8 @@ class _FakeTable:
 
 
 def _collect_init_kwargs(monkeypatch: pytest.MonkeyPatch, params: dict[str, Any]) -> dict[str, Any]:
+    nn = pytest.importorskip("torch.nn")
+    trainer = pytest.importorskip("tlc_plugin_timm.trainer")
     import timm
     import timm.data
     import tlc

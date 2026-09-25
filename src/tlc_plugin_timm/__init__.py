@@ -251,7 +251,7 @@ class TimmPlugin(ComputePlugin):
         params = dict(config.params)
         params["_project_name"] = config.project_name or tlc_project_name
         # The root the host stamped for this job; "" (an SDK without the property) keeps tlc's default.
-        params["_project_root_url"] = getattr(ctx, "project_root_url", "") or ""
+        params["_project_root_url"] = ctx.project_root_url
         params["_run_name"] = tlc_run_name
         params["_task_type"] = config.task_type
         params["_image_column"] = config.image_column

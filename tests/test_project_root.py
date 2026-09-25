@@ -53,23 +53,22 @@ def test_run_job_hands_the_stamped_root_to_the_trainer(monkeypatch: pytest.Monke
     assert params["_project_root_url"] == "s3://bucket/root"
 
 
-class _OldSdkContext:
-    """A context from an SDK that predates ``project_root_url``."""
+class _NoRootContext:
+    """A context whose worker cannot name a root (no stamped key, no ``tlc`` root)."""
 
     job_id = "j2"
     cancelled = False
+    project_root_url = ""
 
     def __init__(self) -> None:
         self.params = {"project_config": _INLINE_CONFIG}
 
     def __getattr__(self, name: str) -> Any:
-        if name == "project_root_url":
-            raise AttributeError(name)
         return lambda *args, **kwargs: None
 
 
-def test_run_job_without_the_property_leaves_the_root_empty(monkeypatch: pytest.MonkeyPatch) -> None:
-    params = _run_job_params(monkeypatch, _OldSdkContext())
+def test_run_job_without_a_root_leaves_it_empty(monkeypatch: pytest.MonkeyPatch) -> None:
+    params = _run_job_params(monkeypatch, _NoRootContext())
     assert params["_project_root_url"] == ""
 
 

@@ -20,8 +20,8 @@ three plugin Sources, all converging on the same out-of-process worker in a mana
 
 The heavy stack (`timm`, `torch`, `torchvision`, `pacmap`, `umap-learn`) lives behind the **`[timm]`
 extra** named by `runtime.provision_extra` in `src/tlc_plugin_timm/plugin.toml` and is installed
-**only** into the plugin's provisioned venv — never the host venv. The base dependency is the SDK
-floor only.
+**only** into the plugin's provisioned venv — never the host venv. The base dependencies are the
+SDK and core floors only.
 
 ## Dev setup
 
@@ -42,9 +42,9 @@ The plugin contract and author guide live in
 
 ## Staged SDK and publishing
 
-SDK 0.5 is not on PyPI yet; `pyproject.toml` routes it to the private staging index. Set the
-index credentials in your shell before `uv sync --locked --group dev` (keep tokens out of
-source files); nothing else is needed:
+The staged `3lc` core and SDK 0.5 are not on PyPI yet; `pyproject.toml` routes both to the private
+staging index. Set the index credentials in your shell before `uv sync --locked --group dev`
+(keep tokens out of source files); nothing else is needed:
 
 ```bash
 export UV_INDEX_STAGING_USERNAME="<staging index username>"

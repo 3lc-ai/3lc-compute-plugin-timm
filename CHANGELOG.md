@@ -8,6 +8,19 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+
+#### Data movement
+
+- **The manifest declares the data a run reads.** `[runtime] data_inputs` names the train and val
+  table URLs and the pretrained checkpoint in the run body, so a Hub that plans data movement asks
+  where that data is for the chosen machine (this computer or a GPU node) before the run starts.
+- **The "Read this data from somewhere else for this run" card.** It checked only the host's disk
+  and saved an alias override with the config, which then applied to every later run of that config.
+  The Hub's run dialog now asks where a table's data is when the target cannot find it, and the SDK
+  worker applies the answer around the job. An override saved with an older config is ignored.
+
+
+#### Other changes
 - Lock the staged 3lc 3.5.0.dev149866 and SDK 0.5.0.20261007121635.34.1; require the staged core
   directly (`3lc>=3.5.0.dev149866,<4.0.0`, also the floor of the `3lc[pacmap,umap]` extra) and resolve
   it from the `staging` index.

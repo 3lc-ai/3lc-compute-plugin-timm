@@ -127,6 +127,7 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
 
     # 3LC params
     project_name = params.get("_project_name", "").strip() or None
+    project_root_url = params.get("_project_root_url", "").strip() or None
     run_name = params.get("_run_name", "").strip() or None
     image_column = params.get("_image_column", "image")
     label_column = params.get("_label_column", "label")
@@ -317,7 +318,12 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
     run = None
     if not collection_disable:
         try:
-            run = tlc.init(project_name=project_name, run_name=run_name, description=f"timm {model_name} training")
+            run = tlc.init(
+                project_name=project_name,
+                root_url=project_root_url,
+                run_name=run_name,
+                description=f"timm {model_name} training",
+            )
             on_status(f"3LC Run created: {run_name}")
             on_status(f"Run URL: {run.url}")
         except Exception as e:
@@ -626,6 +632,7 @@ def collect(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str,
     image_column = params.get("_image_column", "image")
     label_column = params.get("_label_column", "label")
     project_name = params.get("_project_name", "").strip() or None
+    project_root_url = params.get("_project_root_url", "").strip() or None
     run_name = params.get("_run_name", "").strip() or None
     embeddings_dim = int(params.get("image_embeddings_dim", params.get("embeddings_dim", 2)))
     embeddings_reducer = params.get("image_embeddings_reducer", params.get("embeddings_reducer", "umap"))
@@ -697,7 +704,12 @@ def collect(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str,
     num_workers = int(params.get("num_workers", 8))
 
     # Create 3LC Run
-    run = tlc.init(project_name=project_name, run_name=run_name, description=f"timm {model_name} collection")
+    run = tlc.init(
+        project_name=project_name,
+        root_url=project_root_url,
+        run_name=run_name,
+        description=f"timm {model_name} collection",
+    )
     on_status(f"3LC Run created: {run_name}")
     on_status(f"Run URL: {run.url}")
 

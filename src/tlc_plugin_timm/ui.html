@@ -175,9 +175,6 @@
           </label>
         </div>
 
-        <!-- Alias Override -->
-        <div id="tm-alias-override-area"></div>
-
         <!-- Detected task + columns -->
         <div id="tm-detection-area" class="plugin-form-grid">
           <div class="form-group">
@@ -969,12 +966,6 @@ function tmLoadConfig(configId) {
       document.getElementById("tm-save-new-btn").style.display = "";
       document.getElementById("tm-delete-btn").style.display = "";
 
-      // Fetch alias overrides for loaded config's train URL
-      if (c.train_table_url) {
-        _tlcFetchAndPopulateOverrides("tm", c.train_table_url,
-          (c.params || {})._alias_overrides || null);
-      }
-
       tmLoadConfigs();
     })
     .catch(function(e) { tmLog("Error loading config: " + e); });
@@ -1011,10 +1002,6 @@ function tmCollectFormData() {
     var el = paramEls[i];
     params[el.dataset.paramId] = el.type === "checkbox" ? el.checked : el.value;
   }
-
-  // Store alias overrides inside params (so they persist with the config)
-  var _tmAliasOv = _tlcGetAliasOverrides("tm");
-  if (_tmAliasOv.enabled && _tmAliasOv.overrides.length) params._alias_overrides = _tmAliasOv;
 
   // Model fine-tuning and checkpoint params
   var pretrainedUrl = document.getElementById("tm-pretrained-url").value.trim();
@@ -1439,25 +1426,6 @@ function _tmBindAutoSave() {
     mode: "file",
   });
   _tlcBindDataSource("tm-pretrained-url", TM_COMPUTE_URL, "timm", { accept: "*.pt,*.pth", mode: "file" });
-})();
-
-// ── Alias Override Init ───────────────────────────────────────
-(function() {
-  document.getElementById("tm-alias-override-area").innerHTML =
-    _tlcAliasOverrideHtml("tm");
-  _tlcBindAliasOverrideToggle("tm");
-
-  // Fetch aliases when train table URL changes
-  var _tmAliasDebounce = null;
-  var _origTmTrainChange = window.tmOnTrainTableChange;
-  window.tmOnTrainTableChange = function() {
-    _origTmTrainChange();
-    clearTimeout(_tmAliasDebounce);
-    _tmAliasDebounce = setTimeout(function() {
-      var url = document.getElementById("tm-train-url").value.trim();
-      _tlcFetchAndPopulateOverrides("tm", url);
-    }, 500);
-  };
 })();
 
 // ── Init ─────────────────────────────────────────────────────

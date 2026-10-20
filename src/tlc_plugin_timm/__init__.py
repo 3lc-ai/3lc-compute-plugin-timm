@@ -68,13 +68,12 @@ class TimmPlugin(ComputePlugin):
     def get_ui_fragment(self) -> str:
         """Return the self-contained timm UI HTML+JS+CSS fragment."""
         if self._ui_cache is None:
-            from tlc_plugin_sdk.shared.alias_override_ui import alias_override_ui_script
             from tlc_plugin_sdk.shared.data_source_ui import data_source_ui_script
             from tlc_plugin_sdk.shared.ui_inject import inject_scripts
 
             ui_path = Path(__file__).resolve().parent / "ui.html"
             raw = ui_path.read_text(encoding="utf-8")
-            self._ui_cache = inject_scripts(raw, data_source_ui_script(), alias_override_ui_script())
+            self._ui_cache = inject_scripts(raw, data_source_ui_script())
         return self._ui_cache
 
     def compute(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -250,21 +249,19 @@ class TimmPlugin(ComputePlugin):
         # Build params with internal fields (frozen config params + run identity).
         params = dict(config.params)
         params["_project_name"] = config.project_name or tlc_project_name
+        # The root the host stamped for this job; "" (an SDK without the property) keeps tlc's default.
+        params["_project_root_url"] = ctx.project_root_url
         params["_run_name"] = tlc_run_name
         params["_task_type"] = config.task_type
         params["_image_column"] = config.image_column
         params["_label_column"] = config.label_column
         params["_model_name"] = config.model_name
 
-        # Apply alias overrides if requested (restored in finally).
-        alias_originals: list[dict[str, str]] = []
-        alias_ov = params.pop("_alias_overrides", None)
-        if isinstance(alias_ov, dict) and alias_ov.get("enabled") and alias_ov.get("overrides"):
-            from tlc_plugin_sdk.shared.aliases import apply_alias_overrides
-
-            alias_originals = apply_alias_overrides(alias_ov["overrides"])
-            if alias_originals:
-                ctx.log(f"Applied {len(alias_originals)} alias override(s)")
+        # Where this run reads an alias's data is the host's decision: it stamps
+        # ``_alias_overrides`` at the top of the run body and the SDK worker applies it around
+        # run_job. The copy the host mirrors into the inline config's params (and one an older
+        # fragment saved with a config) is dropped here, so it never reaches the trainer.
+        params.pop("_alias_overrides", None)
 
         try:
             on_status(f"Run name: {tlc_run_name}")
@@ -298,11 +295,6 @@ class TimmPlugin(ComputePlugin):
             # event on the generic job record; the traceback stays in the worker log.
             logger.exception("timm run_job failed")
             raise
-        finally:
-            if alias_originals:
-                from tlc_plugin_sdk.shared.aliases import restore_aliases
-
-                restore_aliases(alias_originals)
 
     def get_route_handlers(self) -> list[Any]:
         """Serve timm's custom routes as relative Litestar handlers (host + venv).

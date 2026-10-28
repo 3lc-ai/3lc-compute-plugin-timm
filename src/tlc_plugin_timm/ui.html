@@ -3,20 +3,6 @@
 <!-- timm — self-contained plugin UI fragment -->
 <style>
 /* ── timm-specific styles ── */
-.tm-config-bar {
-  display: flex; align-items: center; gap: 8px;
-  margin-bottom: 14px; padding: 10px 14px;
-  background: var(--bg-card); border: 1px solid var(--border);
-  border-radius: var(--radius-lg, 8px);
-  box-shadow: 0 1px 3px rgba(0,0,0,0.08);
-}
-.tm-config-bar select {
-  flex: 1; max-width: 320px; font-size: 12px; font-weight: 500;
-}
-.tm-config-bar .bar-label {
-  font-size: 10px; font-weight: 700; text-transform: uppercase;
-  letter-spacing: 0.3px; color: var(--text-muted); white-space: nowrap;
-}
 .tm-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
 .tm-log-area { height: 140px; max-height: none; }
 .tm-log-area div { padding: 1px 0; }
@@ -72,7 +58,7 @@
 .tm-mark svg { display: block; }
 </style>
 
-<div class="plugin-page">
+<div class="plugin-page" id="tm-page">
 <!-- ── Hero ───────────────────────────────────────────────── -->
 <div class="plugin-hero" style="padding:20px 24px">
       <h2 style="margin-bottom:6px;display:flex;align-items:center;gap:10px"><span class="tm-mark"><svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" width="100%" height="100%" fill="currentColor" aria-hidden="true"><path d="M1.4446 11.5059c0 1.1021.1673 2.1585.4847 3.1563-.0378-.0028-.0691-.0058-.1058-.0058-.4209 0-.8015.16-1.0704.4512-.3454.3737-.4984.8335-.4316 1.293a1.576 1.576 0 0 0 .2148.5978c-.2319.1864-.4018.4456-.4844.7578-.0646.2448-.131.7543.2149 1.2794a1.4552 1.4552 0 0 0-.0625.1055c-.208.3923-.2207.8372-.0371 1.25.2783.6258.9696 1.1175 2.3126 1.6467.8356.3292 1.5988.5411 1.6056.543 1.1046.2847 2.104.4277 2.969.4277 1.4173 0 2.4754-.3849 3.1525-1.1446 1.538.2651 2.791.1403 3.592.006.6773.7555 1.7332 1.1387 3.1467 1.1387.8649 0 1.8643-.143 2.969-.4278.0068-.0019.77-.2138 1.6056-.543 1.343-.5292 2.0343-1.0208 2.3126-1.6466.1836-.4129.171-.8577-.037-1.25a1.4685 1.4685 0 0 0-.0626-.1056c.346-.525.2795-1.0346.2149-1.2793-.0826-.3122-.2525-.5714-.4844-.7579.11-.1816.1831-.3788.2148-.5977.0669-.4595-.0862-.9193-.4316-1.293-.2688-.2913-.6495-.4513-1.0704-.4513-.0209 0-.0376.0008-.0588.0018.3162-.9966.4846-2.0518.4846-3.1523 0-5.807-4.7362-10.5144-10.5789-10.5144-5.8426 0-10.5788 4.7073-10.5788 10.5144Zm10.5788-9.4831c5.2727 0 9.5476 4.246 9.5476 9.483a9.4201 9.4201 0 0 1-.2696 2.2365c-.0039-.0047-.0079-.011-.0117-.0156-.274-.3255-.6679-.5059-1.1075-.5059-.352 0-.714.1155-1.0763.3438-.2403.1517-.5058.422-.7793.7598-.2534-.3492-.608-.5832-1.0137-.6465a1.5174 1.5174 0 0 0-.2344-.0176c-.9263 0-1.4828.7993-1.6935 1.5177-.1046.2426-.6065 1.3482-1.3614 2.0978-1.1681 1.1601-1.4458 2.3534-.8396 3.6382-.843.1029-1.5836.0927-2.365-.006.5906-1.212.3626-2.4388-.8426-3.6322-.755-.7496-1.2568-1.8552-1.3614-2.0978-.2107-.7184-.7673-1.5177-1.6935-1.5177-.078 0-.1568.0054-.2344.0176-.4057.0633-.7604.2973-1.0137.6465-.2735-.3379-.539-.6081-.7794-.7598-.3622-.2283-.7243-.3438-1.0762-.3438-.4266 0-.8094.171-1.0821.4786a9.4208 9.4208 0 0 1-.2598-2.1936c0-5.237 4.2749-9.483 9.5475-9.483zM8.6443 7.0036c-.4838.0043-.9503.2667-1.1934.7227-.3536.6633-.1006 1.4873.5645 1.84.351.1862.4883-.5261.836-.6485.3107-.1095.841.399 1.0078.086.3536-.6634.1025-1.4874-.5625-1.84a1.3659 1.3659 0 0 0-.6524-.1602Zm6.8403 0c-.2199-.002-.4426.05-.6504.1602-.665.3526-.9181 1.1766-.5645 1.84.1669.313.6971-.1955 1.0079-.086.3476.1224.4867.8347.838.6485.6649-.3527.916-1.1767.5624-1.84-.243-.456-.7096-.7184-1.1934-.7227Zm-9.7565 1.418a.8768.8768 0 0 0-.877.877c0 .4846.3925.877.877.877a.8768.8768 0 0 0 .877-.877.8768.8768 0 0 0-.877-.877zm12.6434 0c-.4845 0-.879.3925-.879.877 0 .4846.3945.877.879.877a.8768.8768 0 0 0 .877-.877.8768.8768 0 0 0-.877-.877zM8.7927 11.459c-.179-.003-.2793.1107-.2793.416 0 .8097.3874 2.125 1.4279 2.924.207-.7123 1.3453-1.2832 1.5079-1.2012.2315.1167.2191.4417.6074.7266.3884-.285.374-.6098.6056-.7266.1627-.082 1.3009.4889 1.5079 1.2012 1.0404-.799 1.4278-2.1144 1.4278-2.924 0-1.2212-1.583.6402-3.5413.6485-1.4686-.0061-2.7266-1.0558-3.2639-1.0645zM4.312 14.4768c.5792.365 1.6964 2.2751 2.1056 3.0177.1371.2488.371.3536.582.3536.4188 0 .7465-.4138.0391-.9395-1.0636-.791-.6914-2.0846-.1836-2.1642a.4302.4302 0 0 1 .0664-.004c.4616 0 .666.7892.666.7892s.5959 1.4898 1.6213 2.508c.942.9356 1.062 1.703.4961 2.6661-.0164-.004-.0159.0236-.1484.2149-.1853.2673-.4322.4688-.7188.6152-.5062.2269-1.1397.2696-1.7833.2696-1.037 0-2.1017-.1824-2.6975-.336-.0293-.0075-3.6505-.9567-3.1916-1.8224.0771-.1454.2033-.2031.3633-.2031.6463 0 1.823.9551 2.3283.9551.113 0 .196-.0865.2285-.2031.2249-.8045-3.2787-1.0522-2.9846-2.1642.0519-.1967.193-.2757.3907-.2754.854 0 2.7704 1.4923 3.172 1.4923.0307 0 .0525-.0085.0645-.0274.2012-.3227.1096-.5865-1.3087-1.4395-1.4182-.8533-2.4315-1.329-1.8653-1.9416.0651-.0707.1574-.1015.2695-.1015.8611.0002 2.8948 1.84 2.8948 1.84s.5487.5683.8809.5683c.0762 0 .1416-.0315.1855-.1054.2355-.3946-2.1858-2.2183-2.3224-2.971-.0926-.51.0641-.7676.3555-.7676-.0006.008.1701-.0285.4942.1759zm16.2257.5918c-.1366.7526-2.5579 2.5764-2.3224 2.9709.044.074.1092.1055.1855.1055.3321 0 .881-.5684.881-.5684s2.0336-1.8397 2.8947-1.84c.1121 0 .2044.0308.2695.1016.5662.6125-.447 1.0882-1.8653 1.9415-1.4183.853-1.51 1.1168-1.3087 1.4396.012.0188.0337.0273.0644.0273.4016 0 2.3181-1.4923 3.1721-1.4923.1977-.0002.3388.0787.3907.2754.294 1.112-3.2095 1.3597-2.9846 2.1642.0325.1166.1156.2032.2285.2032.5054 0 1.682-.9552 2.3283-.9552.16 0 .2862.0577.3633.2032.459.8656-3.1623 1.8149-3.1916 1.8224-.5958.1535-1.6605.336-2.6975.336-.6351 0-1.261-.0409-1.7638-.2599-.2949-.1472-.5488-.3516-.7383-.625-.0411-.0682-.1026-.1476-.1426-.205-.5726-.9679-.455-1.7371.4903-2.676 1.0254-1.0182 1.6212-2.508 1.6212-2.508s.2044-.7891.666-.7891a.4318.4318 0 0 1 .0665.0039c.5078.0796.88 1.3732-.1836 2.1642-.7074.5257-.3797.9395.039.9395.211 0 .445-.1047.5821-.3535.4092-.7426 1.5264-2.6527 2.1056-3.0178.5588-.3524.99-.1816.8497.5918z"/></svg></span>timm Training</h2>
@@ -121,16 +107,8 @@
   </span>
 </div>
 
-<!-- ── Config bar (replaces sidebar) ──────────────────────── -->
-<div class="tm-config-bar">
-  <span class="bar-label">Config</span>
-  <select id="tm-config-select" class="form-control" onchange="tmOnConfigSelect(this.value)">
-    <option value="">New config</option>
-  </select>
-  <button class="btn btn-ghost btn-sm" onclick="tmNewConfig()">+ New</button>
-  <button class="btn btn-secondary btn-sm" id="tm-save-new-btn" onclick="tmSaveAsNew()" style="display:none">Save New</button>
-  <button class="btn btn-danger btn-sm" id="tm-delete-btn" onclick="tmDeleteConfig()" style="display:none">Delete</button>
-</div>
+<!-- ── Presets: the SDK's preset bar renders here (_tlcPluginPresets) ── -->
+<div id="tm-presets"></div>
 
     <!-- ── Input Tables ──────────────────────────────────── -->
     <div class="card mb-16">
@@ -138,11 +116,6 @@
         <div class="card-title"><span class="plugin-section-number">1</span> Input Tables</div>
       </div>
       <div class="card-body">
-        <div class="form-group">
-          <label class="form-label" for="tm-config-name">Config Name</label>
-          <input type="text" id="tm-config-name" class="form-control" placeholder="e.g. CIFAR-10 ResNet50">
-        </div>
-
         <div class="form-group">
           <label class="form-label" for="tm-train-url">Train Table URL</label>
           <div style="display:flex;gap:6px">
@@ -475,17 +448,16 @@
 
 // ── State ─────────────────────────────────────────────────────
 var tmSocket = null;
-var tmCurrentConfigId = null;
+var tmPresets = null;           // the SDK's preset bar (_tlcPluginPresets), once mounted
+var _tmInitialParams = null;    // the parameter fields as the page loaded: Default settings
 var tmModelsCache = null;       // [{name, family, popular}]
 var tmDetectedTask = null;
 var tmDetectedImageCol = "";
 var tmDetectedLabelCol = "";
 var tmCurrentMode = "train";
-var _tmAutoSaveTimer = null;
 var _tmCurrentJobId = null;
-var _tmSavedSnapshot = null;
 
-var _TM_STORAGE_KEY = "timm_selected_config";
+var _TM_STORAGE_KEY = "timm_selected_config";  // the old config bar's key; the preset bar honours it once
 
 var TM_COMPUTE_URL = PLUGIN_API.getConfig("compute_service_url");
 
@@ -616,7 +588,6 @@ function _tmTrackJob(jobId) {
         tmLog("Job " + status + ".");
       }
       tmFinishCurrentJob(status, job);
-      tmLoadConfigs();
     },
     onError: function(job) {
       _tmUntrack = null;
@@ -835,7 +806,7 @@ function tmSelectModel(name) {
   document.getElementById("tm-model-dropdown").classList.remove("open");
 
   // Fetch model info for image size
-  _tmFetchJson("/api/plugins/timm/models/" + encodeURIComponent(name) + "/info")
+  return _tmFetchJson("/api/plugins/timm/models/" + encodeURIComponent(name) + "/info")
     .then(function(info) {
       if (info.error) {
         document.getElementById("tm-model-info").textContent = "Error: " + info.error;
@@ -859,140 +830,113 @@ document.addEventListener("click", function(e) {
   }
 });
 
-// ── Configs ─────────────────────────────────────────────────
-function tmLoadConfigs() {
-  _tmFetchJson("/api/plugins/timm/configs")
-    .then(function(data) {
-      if (data.error) { tmLog("Error loading configs: " + data.error); return; }
-      tmRenderConfigsList(Array.isArray(data) ? data : []);
-    })
-    .catch(function(e) {
-      tmLog("Error loading configs: " + String(e));
-    });
+// ── Presets: the form in and out ─────────────────────────────
+function tmDefaultFormData() {
+  return {
+    run_name: "", project_name: "", model_name: "", mode: "train", task_type: "",
+    train_table_url: "", val_table_url: "", use_latest: false, image_column: "", label_column: "",
+    params: JSON.parse(JSON.stringify(_tmInitialParams || {})),
+  };
 }
 
-function tmRenderConfigsList(configs) {
-  var sel = document.getElementById("tm-config-select");
-  var currentVal = tmCurrentConfigId || "";
-  sel.innerHTML = '<option value="">New config</option>';
-  configs.forEach(function(c) {
-    var opt = document.createElement("option");
-    opt.value = c.id;
-    opt.textContent = (c.name || "Untitled") + " — " + _esc(c.model_name || "?") + " · " + _esc(c.task_type || "?");
-    if (c.id === currentVal) opt.selected = true;
-    sel.appendChild(opt);
-  });
-  document.getElementById("tm-delete-btn").style.display = currentVal ? "" : "none";
+// The tables the plugin was opened with: ?train=&val= from the DAG's Train link, or the action
+// button's tables. They replace the preset's inputs for the page's life (SDK guide → Presets).
+function tmContextInputs() {
+  var ctx = (typeof PLUGIN_API !== "undefined" && PLUGIN_API.context) ? PLUGIN_API.context : {};
+  var urls = ctx.resourceUrls || [];
+  var q = new URLSearchParams(window.location.search);
+  if (q.has("train") || q.has("val")) {
+    return { train_table_url: q.get("train") || "", val_table_url: q.get("val") || "" };
+  }
+  if (urls.length) return { train_table_url: urls[0], val_table_url: urls[1] || "" };
+  return null;
 }
 
-function tmOnConfigSelect(val) {
-  if (val) {
-    tmLoadConfig(val);
-  } else {
-    tmNewConfig();
+// The name a new preset gets unless the person types one: "resnet50 classification · 2026-10-27".
+function tmAutoName(values) {
+  var d = new Date();
+  var dateStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
+  var model = (values.model_name || "timm").replace(/\..*$/, "");
+  return model + " " + (values.task_type || values.mode || "train") + " \u00b7 " + dateStr;
+}
+
+// What the list shows after a preset's name: "resnet50 · classification".
+function tmPresetSummary(values) {
+  return [values.model_name, values.task_type || values.mode];
+}
+
+function _tmShowDetected(task, imageCol, labelCol) {
+  var badge = document.getElementById("tm-task-badge");
+  badge.textContent = task ? task.replace(/_/g, " ") : "--";
+  badge.className = task ? "tm-task-badge-" + task : "plugin-task-badge";
+  document.getElementById("tm-task-detail").textContent = "";
+  document.getElementById("tm-image-col").textContent = imageCol || "--";
+  document.getElementById("tm-label-col").textContent = labelCol || "--";
+  document.getElementById("tm-num-classes").textContent = "";
+  document.getElementById("tm-class-names").textContent = "";
+}
+
+function _tmRestoreParams(params) {
+  var paramEls = document.querySelectorAll("[data-param-id]");
+  for (var i = 0; i < paramEls.length; i++) {
+    var el = paramEls[i];
+    var val = params[el.dataset.paramId];
+    if (val !== undefined) {
+      if (el.type === "checkbox") el.checked = val === true || val === "true";
+      else el.value = val;
+    }
   }
 }
 
-function tmNewConfig() {
-  tmCurrentConfigId = null;
-  localStorage.removeItem(_TM_STORAGE_KEY);
-  document.getElementById("tm-config-select").value = "";
-  document.getElementById("tm-config-name").value = "";
-  document.getElementById("tm-run-name").value = "";
-  document.getElementById("tm-3lc-project").value = "";
-  document.getElementById("tm-train-url").value = "";
-  document.getElementById("tm-val-url").value = "";
-  document.getElementById("tm-use-latest").checked = false;
-  document.getElementById("tm-model-search").value = "";
-  document.getElementById("tm-model-info").textContent = "";
-  document.getElementById("tm-task-badge").textContent = "--";
-  document.getElementById("tm-task-badge").className = "plugin-task-badge";
-  document.getElementById("tm-task-detail").textContent = "";
-  document.getElementById("tm-image-col").textContent = "--";
-  document.getElementById("tm-label-col").textContent = "--";
-  document.getElementById("tm-num-classes").textContent = "";
-  document.getElementById("tm-class-names").textContent = "";
-  tmDetectedTask = null;
-  tmDetectedImageCol = "";
-  tmDetectedLabelCol = "";
-  tmSetMode("train");
-  _tmEnforceTaskMode("");
-  document.getElementById("tm-save-new-btn").style.display = "none";
-  document.getElementById("tm-delete-btn").style.display = "none";
-  tmLoadConfigs();
+// Fill the form from a preset's values. Resolves once the task is detected and the model's info
+// is in, so the preset bar compares the form only then.
+function tmApplyFormData(values) {
+  values = values || {};
+  var params = values.params || {};
+  document.getElementById("tm-run-name").value = values.run_name || "";
+  document.getElementById("tm-3lc-project").value = values.project_name || "";
+  document.getElementById("tm-train-url").value = values.train_table_url || "";
+  document.getElementById("tm-val-url").value = values.val_table_url || "";
+  document.getElementById("tm-use-latest").checked = !!values.use_latest;
+  document.getElementById("tm-pretrained-url").value = params.pretrained_model_url || "";
+  document.getElementById("tm-copy-model").checked = params.copy_model_to_run !== false;
+  tmDetectedTask = values.task_type || null;
+  tmDetectedImageCol = values.image_column || "";
+  tmDetectedLabelCol = values.label_column || "";
+  _tmShowDetected(values.task_type || "", tmDetectedImageCol, tmDetectedLabelCol);
+  tmSetMode(values.mode || "train");
+  _tmEnforceTaskMode(values.task_type || "");
+  var model = values.model_name || "";
+  // The train table decides the task and the columns, and the 3LC project when none is set; the
+  // preset's own stand while the table cannot be read.
+  var detect = document.getElementById("tm-train-url").value.trim() ? tmDetectTask() : Promise.resolve(false);
+  return detect.then(function() {
+    if (model) return tmSelectModel(model);
+    document.getElementById("tm-model-search").value = "";
+    document.getElementById("tm-model-info").textContent = "";
+  }).then(function() {
+    // The model's info sets the image size; the preset's parameters come after, so they win.
+    _tmRestoreParams(params);
+  });
 }
 
-function tmLoadConfig(configId) {
-  _tmFetchJson("/api/plugins/timm/configs/" + configId)
-    .then(function(c) {
-      if (c.error) { tmLog("Error: " + c.error); return; }
-      tmCurrentConfigId = c.id;
-      localStorage.setItem(_TM_STORAGE_KEY, c.id);
-      document.getElementById("tm-config-name").value = c.name || "";
-      document.getElementById("tm-run-name").value = c.run_name || "";
-      document.getElementById("tm-3lc-project").value = c.project_name || "";
-      document.getElementById("tm-train-url").value = c.train_table_url || "";
-      document.getElementById("tm-val-url").value = c.val_table_url || "";
-      document.getElementById("tm-use-latest").checked = !!c.use_latest;
-      document.getElementById("tm-model-search").value = c.model_name || "";
-      document.getElementById("tm-task-badge").textContent = c.task_type || "--";
-      document.getElementById("tm-image-col").textContent = c.image_column || "--";
-      document.getElementById("tm-label-col").textContent = c.label_column || "--";
-      tmDetectedTask = c.task_type || null;
-      tmDetectedImageCol = c.image_column || "";
-      tmDetectedLabelCol = c.label_column || "";
-
-      tmSetMode(c.mode || "train");
-      _tmEnforceTaskMode(c.task_type || "");
-
-      // Restore params
-      var params = c.params || {};
-      var paramEls = document.querySelectorAll("[data-param-id]");
-      for (var i = 0; i < paramEls.length; i++) {
-        var el = paramEls[i];
-        var val = params[el.dataset.paramId];
-        if (val !== undefined) {
-          if (el.type === "checkbox") el.checked = val === true || val === "true";
-          else el.value = val;
-        }
-      }
-
-      // Restore pretrained model and copy checkbox
-      document.getElementById("tm-pretrained-url").value = params.pretrained_model_url || "";
-      document.getElementById("tm-copy-model").checked = params.copy_model_to_run !== false;
-
-      if (c.model_name) tmSelectModel(c.model_name);
-      document.getElementById("tm-config-select").value = c.id;
-      document.getElementById("tm-save-new-btn").style.display = "";
-      document.getElementById("tm-delete-btn").style.display = "";
-
-      tmLoadConfigs();
-    })
-    .catch(function(e) { tmLog("Error loading config: " + e); });
-}
-
-function tmDeleteConfig() {
-  if (!tmCurrentConfigId) return;
-  if (!confirm("Delete this timm config?")) return;
-  _tmPost("/api/plugins/timm/configs/" + tmCurrentConfigId + "/delete", {})
-    .then(function() { tmLog("Config deleted."); tmNewConfig(); })
-    .catch(function(e) { tmLog("Error: " + e); });
-}
-
-function tmSaveAsNew() {
-  var data = tmCollectFormData();
-  data.id = "";
-  if (!data.name.trim()) { alert("Please enter a config name."); return; }
-  _tmPost("/api/plugins/timm/configs", data)
-    .then(function(resp) {
-      if (resp.error) { alert("Error: " + resp.error); return; }
-      tmCurrentConfigId = resp.id;
-      localStorage.setItem(_TM_STORAGE_KEY, resp.id);
-      document.getElementById("tm-delete-btn").style.display = "";
-      tmLoadConfigs();
-      tmLog("Saved as new config.");
-    })
-    .catch(function(e) { alert("Save failed: " + e); });
+function tmInitPresets() {
+  _tmInitialParams = tmCollectFormData().params;
+  tmPresets = _tlcPluginPresets({
+    pluginId: "timm",
+    apiPath: "/api/plugins/timm/configs",
+    mount: "tm-presets",
+    formRoot: "tm-page",
+    collect: tmCollectFormData,
+    apply: tmApplyFormData,
+    defaults: tmDefaultFormData,
+    inputs: ["train_table_url", "val_table_url"],
+    contextInputs: tmContextInputs,
+    autoName: tmAutoName,
+    summary: tmPresetSummary,
+    legacyKey: _TM_STORAGE_KEY,
+  });
+  return tmPresets.init();
 }
 
 function tmCollectFormData() {
@@ -1009,8 +953,6 @@ function tmCollectFormData() {
   params.copy_model_to_run = document.getElementById("tm-copy-model").checked;
 
   return {
-    id: tmCurrentConfigId || "",
-    name: document.getElementById("tm-config-name").value.trim(),
     run_name: document.getElementById("tm-run-name").value.trim(),
     project_name: document.getElementById("tm-3lc-project").value.trim(),
     model_name: document.getElementById("tm-model-search").value.trim(),
@@ -1030,24 +972,27 @@ var _tmDetectDebounce = null;
 
 function tmOnTrainTableChange() {
   clearTimeout(_tmDetectDebounce);
-  _tmDetectDebounce = setTimeout(function() {
+  _tmDetectDebounce = setTimeout(tmDetectTask, 500);
+}
+
+// Detect the task and the columns from the train table; resolves true when it answered. Fills the
+// 3LC project when none is set.
+function tmDetectTask() {
     var url = document.getElementById("tm-train-url").value.trim();
     if (!url) {
-      document.getElementById("tm-task-badge").textContent = "--";
-      document.getElementById("tm-task-detail").textContent = "";
-      document.getElementById("tm-image-col").textContent = "--";
-      document.getElementById("tm-label-col").textContent = "--";
-      document.getElementById("tm-num-classes").textContent = "";
       tmDetectedTask = null;
-      return;
+      tmDetectedImageCol = "";
+      tmDetectedLabelCol = "";
+      _tmShowDetected("", "", "");
+      return Promise.resolve(false);
     }
     document.getElementById("tm-task-badge").textContent = "detecting...";
 
-    _tmPost("/api/plugins/timm/detect-task", { url: url })
+    return _tmPost("/api/plugins/timm/detect-task", { url: url })
       .then(function(data) {
         if (data.error) {
           _tmSetTaskBadge("error", data.error);
-          return;
+          return false;
         }
         tmDetectedTask = data.task;
         tmDetectedImageCol = data.image_column || "";
@@ -1075,11 +1020,12 @@ function tmOnTrainTableChange() {
           var projEl = document.getElementById("tm-3lc-project");
           if (!projEl.value.trim()) projEl.value = data.project_name;
         }
+        return true;
       })
       .catch(function(e) {
         _tmSetTaskBadge("error", String(e));
+        return false;
       });
-  }, 500);
 }
 
 // ── Training ─────────────────────────────────────────────────
@@ -1087,50 +1033,35 @@ function tmStartTraining() {
   var data = tmCollectFormData();
   if (!data.train_table_url.trim()) { alert("Please select a train table."); return; }
   if (!data.model_name) { alert("Please select a model."); return; }
-  if (!data.name.trim()) {
-    var d = new Date();
-    var dateStr = d.getFullYear() + "-" + String(d.getMonth() + 1).padStart(2, "0") + "-" + String(d.getDate()).padStart(2, "0");
-    var model = (data.model_name || "timm").replace(/\..*$/, "");
-    data.name = dateStr + " " + model + " " + (data.task_type || "train");
-  }
-
-  _tmPost("/api/plugins/timm/configs", data)
-    .then(function(resp) {
-      if (resp.error) { tmLog("Error saving: " + resp.error); return; }
-      tmCurrentConfigId = resp.id;
-      localStorage.setItem(_TM_STORAGE_KEY, resp.id);
-      tmLoadConfigs();
-
-      // Launch through the SDK's PluginJobs client. project_name attributes the job
-      // in the generic Queue & Progress panel — the host reads it from the run body
-      // only; the value in the saved config never reaches the job record. Left blank,
-      // PluginJobs fills it from the launch context (the project page the plugin was
-      // opened from). /run is answered by the host itself (the job is queued, the
-      // worker is spawned later), so authFetch's default timeout is enough here —
-      // the generous _tmFetch timeout is for the worker-proxied routes only.
-      if (typeof PluginJobs === "undefined") { tmLog("Error: job tracker unavailable — reload the page."); return; }
-      // project_config rides inline so the run body is self-contained: a remote GPU
-      // worker has no local config store to resolve config_id against (SDK guide,
-      // "Run-body conventions for remote workers"). Harmless locally — the store copy
-      // and this payload are the same frozen config.
-      PluginJobs.start("timm", {
-        config_id: resp.id,
-        project_name: (document.getElementById("tm-3lc-project").value || "").trim(),
-        project_config: Object.assign({}, data, { id: resp.id }),
-      })
-        .then(function(trainResp) {
-          if (!trainResp || trainResp.error) {
-            tmLog("Error: " + ((trainResp && trainResp.error) || "failed to start job"));
-            return;
-          }
-          if (!trainResp.job_id) { tmLog(_tmNotStartedMessage(trainResp)); return; }
-          tmLog("timm job submitted: " + trainResp.job_id);
-          tmShowCurrentJob(trainResp.job_id, _tmJobLabel(data));
-          _tmTrackJob(trainResp.job_id);
-        })
-        .catch(function(e) { tmLog("Error starting: " + e); });
+  // Launch through the SDK's PluginJobs client. project_name attributes the job in the generic
+  // Queue & Progress panel — the host reads it from the run body only. Left blank, PluginJobs
+  // fills it from the launch context (the project page the plugin was opened from). /run is
+  // answered by the host itself (the job is queued, the worker is spawned later), so authFetch's
+  // default timeout is enough here — the generous _tmFetch timeout is for the worker-proxied
+  // routes only.
+  if (typeof PluginJobs === "undefined") { tmLog("Error: job tracker unavailable — reload the page."); return; }
+  // The run body is self-contained: project_config rides inline, so a remote GPU worker needs no
+  // local config store (SDK guide, "Run-body conventions for remote workers"). The preset's id
+  // and name are set while the form is unchanged from it, so the job card can name it, and empty
+  // otherwise. A run never saves a preset.
+  var presetId = tmPresets ? tmPresets.presetId() : "";
+  var config = Object.assign({}, data, { id: presetId, name: tmPresets ? tmPresets.presetName() : "" });
+  PluginJobs.start("timm", {
+    config_id: presetId,
+    project_name: (document.getElementById("tm-3lc-project").value || "").trim(),
+    project_config: config,
+  })
+    .then(function(trainResp) {
+      if (!trainResp || trainResp.error) {
+        tmLog("Error: " + ((trainResp && trainResp.error) || "failed to start job"));
+        return;
+      }
+      if (!trainResp.job_id) { tmLog(_tmNotStartedMessage(trainResp)); return; }
+      tmLog("timm job submitted: " + trainResp.job_id);
+      tmShowCurrentJob(trainResp.job_id, _tmJobLabel(config));
+      _tmTrackJob(trainResp.job_id);
     })
-    .catch(function(e) { tmLog("Error: " + e); });
+    .catch(function(e) { tmLog("Error starting: " + e); });
 }
 
 function tmStopCurrentJob() {
@@ -1390,23 +1321,15 @@ function tmRenderMetrics(m) {
 }
 
 // ── Auto-save ───────────────────────────────────────────────
+// The SDK's preset bar owns the saved setups (SDK guide → Presets). The form's handlers call this
+// after a change, so the bar can compare the form; a run never saves a preset.
 function tmScheduleAutoSave() {
-  clearTimeout(_tmAutoSaveTimer);
-  if (!tmCurrentConfigId) return;
-  _tmAutoSaveTimer = setTimeout(function() {
-    var data = tmCollectFormData();
-    if (!data.name.trim()) return;
-    _tmPost("/api/plugins/timm/configs", data)
-      .then(function(resp) {
-        if (!resp.error) tmLoadConfigs();
-      })
-      .catch(function() {});
-  }, 1200);
+  if (tmPresets) tmPresets.changed();
 }
 
 function _tmBindAutoSave() {
   // Bind auto-save to all form inputs
-  var inputs = document.querySelectorAll("#tm-config-name, #tm-run-name, #tm-3lc-project, #tm-model-search, [data-param-id]");
+  var inputs = document.querySelectorAll("#tm-run-name, #tm-3lc-project, #tm-model-search, [data-param-id]");
   for (var i = 0; i < inputs.length; i++) {
     inputs[i].addEventListener("input", tmScheduleAutoSave);
     inputs[i].addEventListener("change", tmScheduleAutoSave);
@@ -1433,47 +1356,11 @@ function _tmBindAutoSave() {
   tmInitSocket();
   _tmSeedFromHost();
   tmLoadModels();
-  tmLoadConfigs();
   tmLoadQueue();
   _tmBindAutoSave();
 
-  // Pre-fill from URL params (action buttons use action_param_names: train, val)
-  var _urlParams = new URLSearchParams(window.location.search);
-  var _trainParam = _urlParams.get('train') || '';
-  var _valParam = _urlParams.get('val') || '';
-  var _projectParam = _urlParams.get('project') || '';
-
-  // Also check generic context (table= params)
-  var ctx = (typeof PLUGIN_API !== 'undefined' && PLUGIN_API.context) ? PLUGIN_API.context : {};
-  var ctxUrls = ctx.resourceUrls || [];
-  if (!_trainParam && ctxUrls.length >= 1) _trainParam = ctxUrls[0];
-  if (!_valParam && ctxUrls.length >= 2) _valParam = ctxUrls[1];
-  if (!_projectParam && ctx.projectName) _projectParam = ctx.projectName;
-
-  if (_trainParam || _valParam) {
-    if (_trainParam) document.getElementById('tm-train-url').value = _trainParam;
-    if (_valParam) document.getElementById('tm-val-url').value = _valParam;
-    if (_projectParam) document.getElementById('tm-3lc-project').value = _projectParam;
-    if (_trainParam) tmOnTrainTableChange();
-  } else {
-    // Restore the last-selected config — but only if it still exists. A remembered
-    // id can be stale (the config was deleted, or it carried over from a prior
-    // config store), which would otherwise 404 on load and surface a spurious
-    // startup error. Verify against the list first; if the list fetch fails (e.g. a
-    // slow/transient worker) leave the pointer untouched so it is never discarded
-    // on a transient error.
-    var lastId = localStorage.getItem(_TM_STORAGE_KEY);
-    if (lastId) {
-      _tmFetchJson("/api/plugins/timm/configs")
-        .then(function(data) {
-          if (Array.isArray(data) && data.some(function(c) { return c.id === lastId; })) {
-            tmLoadConfig(lastId);
-          } else {
-            localStorage.removeItem(_TM_STORAGE_KEY);
-          }
-        })
-        .catch(function() { /* list unavailable — keep the pointer, retry next load */ });
-    }
-  }
+  // The preset bar opens the form: as it was last left in this browser, else on Default
+  // settings, with the tables the plugin was opened with (tmContextInputs) in place of its own.
+  tmInitPresets();
 })();
 </script>

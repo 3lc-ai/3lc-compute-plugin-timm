@@ -69,11 +69,12 @@ class TimmPlugin(ComputePlugin):
         """Return the self-contained timm UI HTML+JS+CSS fragment."""
         if self._ui_cache is None:
             from tlc_plugin_sdk.shared.data_source_ui import data_source_ui_script
+            from tlc_plugin_sdk.shared.preset_ui import preset_ui_script
             from tlc_plugin_sdk.shared.ui_inject import inject_scripts
 
             ui_path = Path(__file__).resolve().parent / "ui.html"
             raw = ui_path.read_text(encoding="utf-8")
-            self._ui_cache = inject_scripts(raw, data_source_ui_script())
+            self._ui_cache = inject_scripts(raw, data_source_ui_script(), preset_ui_script())
         return self._ui_cache
 
     def compute(self, params: dict[str, Any]) -> dict[str, Any]:
@@ -120,7 +121,7 @@ class TimmPlugin(ComputePlugin):
         if config is None and config_id:
             config = config_store().get_config(config_id)
         if config is None:
-            ctx.fail("Config not found" if config_id else "config_id is required")
+            ctx.fail("Config not found" if config_id else "project_config is required")
 
         mode = config.mode or "train"
         mode_label = "Collection" if mode == "collect" else "Training"

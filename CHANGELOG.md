@@ -9,6 +9,16 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+#### Table fields
+
+- **Train Table URL and Validation Table URL are the Hub's table field (`<tlc-table-field>`).** Browse…, or a
+  double-click in the empty field, opens Browse Tables, which opens at the field's table and tags the table the
+  other field holds. The fields keep their ids, so presets, the swap button and `oninput=` work as before. The
+  plugin needs Hub 1.2.0 (`min_frontend_version`).
+- **The Browse panel under Pretrained Model URL is the SDK's file chooser:** a Location line, a path bar
+  that follows the browsing, a click that opens a folder or picks the file, the keyboard; and a
+  double-click in the empty field opens it.
+
 #### Presets
 
 - **The Config bar is the SDK's preset bar.** One line at the top of the form: a select with Default

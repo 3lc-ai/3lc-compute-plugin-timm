@@ -117,17 +117,19 @@
       </div>
       <div class="card-body">
         <div class="form-group">
-          <label class="form-label" for="tm-train-url">Train Table URL</label>
+          <!-- The Hub's required style: a red * on the label, a red wash while the field is empty. -->
+          <label class="form-label required" for="tm-train-url">Train Table URL</label>
           <div style="display:flex;gap:6px">
             <input type="text" id="tm-train-url" class="form-control plugin-mono"
-                   placeholder="Paste URL or click Browse..."
+                   placeholder="Paste URL or click Browse..." required
                    oninput="tmOnTrainTableChange()">
             <button type="button" class="btn btn-secondary btn-sm" onclick="openTablePicker('tm-train-url')">Browse</button>
           </div>
           <div class="form-help">Select your training data table. Task type and class names are auto-detected from the table schema.</div>
         </div>
         <div style="display:flex;justify-content:center">
-          <button type="button" class="btn btn-ghost btn-sm" onclick="tmSwapUrls()" title="Swap train / val URLs"
+          <button type="button" class="btn btn-ghost btn-sm" id="tm-swap-btn" onclick="tmSwapUrls()"
+                  title="Swap train / val URLs" data-title="Swap train / val URLs"
                   style="font-size:13px;padding:1px 6px;line-height:1">&#x21C5;</button>
         </div>
         <div class="form-group">
@@ -180,9 +182,9 @@
         <div class="plugin-form-grid">
           <!-- Model search -->
           <div class="form-group">
-            <label class="form-label">Model</label>
+            <label class="form-label required" for="tm-model-search">Model</label>
             <div class="tm-model-search">
-              <input type="text" id="tm-model-search" class="form-control"
+              <input type="text" id="tm-model-search" class="form-control" required
                      placeholder="Search models (e.g. resnet50, vit)..."
                      oninput="tmFilterModels()" onfocus="tmOpenModelDropdown()" autocomplete="off">
               <div id="tm-model-dropdown" class="tm-model-dropdown"></div>
@@ -384,8 +386,11 @@
 
         <!-- Actions -->
         <div class="plugin-action-bar">
-          <button class="btn btn-primary" id="tm-train-btn" onclick="tmStartTraining()">Start timm Training</button>
+          <button class="btn btn-primary" id="tm-train-btn" onclick="tmStartTraining()"
+                  aria-describedby="tm-train-why">Start timm Training</button>
         </div>
+        <!-- Why Start cannot run yet (tmGate). Always one line high, so the page does not move as it comes and goes. -->
+        <div class="text-sm text-muted" id="tm-train-why" style="margin-top:6px;line-height:1.5;min-height:1.5em"></div>
       </div>
     </div>
 
@@ -456,6 +461,10 @@ var tmDetectedImageCol = "";
 var tmDetectedLabelCol = "";
 var tmCurrentMode = "train";
 var _tmCurrentJobId = null;
+var tmDetecting = false;        // the train table is being read (from the change, through the debounce)
+var tmTaskError = "";           // why the train table could not be read; "" when it was, or is not yet
+var tmModelsState = "loading";  // the model list: "loading", "ready" or "failed"
+var _tmSubmitting = false;      // Start was pressed and the run request has not answered yet
 
 var _TM_STORAGE_KEY = "timm_selected_config";  // the old config bar's key; the preset bar honours it once
 
@@ -680,15 +689,57 @@ function tmSetMode(mode) {
     trainBtn.className = "btn btn-sm btn-secondary";
     collectBtn.className = "btn btn-sm btn-primary";
     helpEl.textContent = "Run inference and collect embeddings + predictions (no training).";
-    startBtn.textContent = "Start Collection";
     trainParams.style.display = "none";
   } else {
     trainBtn.className = "btn btn-sm btn-primary";
     collectBtn.className = "btn btn-sm btn-secondary";
     helpEl.textContent = "Train a model with 3LC metrics collection.";
-    startBtn.textContent = "Start timm Training";
     trainParams.style.display = "";
   }
+  startBtn.textContent = tmStartLabel();
+  tmGate();
+}
+
+// ── Start: disabled until it can run, saying why (PBI 19074) ──
+// Start's label follows the mode; the reasons name it as the button shows it.
+function tmStartLabel() {
+  return tmCurrentMode === "collect" ? "Start Collection" : "Start timm Training";
+}
+
+// Why Start cannot run yet, as what to do to enable it; "" when it can.
+function tmStartBlocker() {
+  var label = tmStartLabel();
+  if (!document.getElementById("tm-train-url").value.trim()) return "Choose a train table to enable " + label + ".";
+  if (tmDetecting) return "Wait while the train table is read to enable " + label + ".";
+  if (tmTaskError) return "Choose another train table to enable " + label + ": this one could not be read.";
+  // "unknown" is a table without an image column (task_detection.py): nothing to train or collect on.
+  if (tmDetectedTask === "unknown") return "Choose a train table with an image column to enable " + label + ".";
+  if (tmModelsState === "loading") return "Wait while the models load to enable " + label + ".";
+  if (tmModelsState === "failed" || !tmModelsCache || !tmModelsCache.length) {
+    return "Fix the problem shown in the Log to enable " + label + ": no models could be loaded.";
+  }
+  var model = document.getElementById("tm-model-search").value.trim();
+  if (!model) return "Choose a model to enable " + label + ".";
+  if (!tmModelsCache.some(function(m) { return m.name === model; })) {
+    return "Choose a model from the list to enable " + label + ".";
+  }
+  if (typeof PluginJobs === "undefined") return "Reload the page to enable " + label + ".";
+  return "";
+}
+
+// Start, disabled while it cannot run, with the reason in its tooltip and on the line under it;
+// Swap, disabled while both table fields are empty, with the reason in its tooltip.
+function tmGate() {
+  var btn = document.getElementById("tm-train-btn");
+  var reason = tmStartBlocker();
+  btn.disabled = _tmSubmitting || !!reason;
+  btn.title = reason;
+  document.getElementById("tm-train-why").textContent = reason;  // the line keeps its height when empty
+  var swap = document.getElementById("tm-swap-btn");
+  var noTables = !document.getElementById("tm-train-url").value.trim() &&
+    !document.getElementById("tm-val-url").value.trim();
+  swap.disabled = noTables;
+  swap.title = noTables ? "Nothing to swap: both table fields are empty." : swap.dataset.title;
 }
 
 function _tmEnforceTaskMode(task) {
@@ -696,7 +747,7 @@ function _tmEnforceTaskMode(task) {
   if (task === "feature_extraction") {
     tmSetMode("collect");
     trainBtn.disabled = true;
-    trainBtn.title = "No label column — training not available for this dataset";
+    trainBtn.title = "Choose a train table with a label column to enable Train.";
   } else {
     trainBtn.disabled = false;
     trainBtn.title = "";
@@ -706,12 +757,21 @@ function _tmEnforceTaskMode(task) {
 // ── Model Search ─────────────────────────────────────────────
 function tmLoadModels() {
   if (tmModelsCache !== null) return;
+  tmModelsState = "loading";
+  tmGate();
   _tmFetchJson("/api/plugins/timm/models")
     .then(function(data) {
       tmModelsCache = Array.isArray(data) ? data : [];
+      tmModelsState = "ready";
       tmLog("Loaded " + tmModelsCache.length + " timm models");
+      tmGate();
     })
-    .catch(function(e) { tmLog("Failed to load models: " + e); });
+    .catch(function(e) {
+      // The Model field tries again when it is next focused (tmOpenModelDropdown).
+      tmModelsState = "failed";
+      tmLog("Failed to load models: " + e);
+      tmGate();
+    });
 }
 
 function tmOpenModelDropdown() {
@@ -804,6 +864,7 @@ function _tmModelItem(m, isPopular) {
 function tmSelectModel(name) {
   document.getElementById("tm-model-search").value = name;
   document.getElementById("tm-model-dropdown").classList.remove("open");
+  tmGate();  // the name was set in code
 
   // Fetch model info for image size
   return _tmFetchJson("/api/plugins/timm/models/" + encodeURIComponent(name) + "/info")
@@ -903,12 +964,14 @@ function tmApplyFormData(values) {
   tmDetectedTask = values.task_type || null;
   tmDetectedImageCol = values.image_column || "";
   tmDetectedLabelCol = values.label_column || "";
+  tmTaskError = "";
+  tmDetecting = !!document.getElementById("tm-train-url").value.trim();
   _tmShowDetected(values.task_type || "", tmDetectedImageCol, tmDetectedLabelCol);
   tmSetMode(values.mode || "train");
   _tmEnforceTaskMode(values.task_type || "");
   var model = values.model_name || "";
   // The train table decides the task and the columns, and the 3LC project when none is set; the
-  // preset's own stand while the table cannot be read.
+  // preset's own stand while the table cannot be read (Start then says so).
   var detect = document.getElementById("tm-train-url").value.trim() ? tmDetectTask() : Promise.resolve(false);
   return detect.then(function() {
     if (model) return tmSelectModel(model);
@@ -917,6 +980,7 @@ function tmApplyFormData(values) {
   }).then(function() {
     // The model's info sets the image size; the preset's parameters come after, so they win.
     _tmRestoreParams(params);
+    tmGate();
   });
 }
 
@@ -971,29 +1035,56 @@ function tmCollectFormData() {
 var _tmDetectDebounce = null;
 
 function tmOnTrainTableChange() {
+  // Another table: its task and columns are unknown until detection answers, and the previous
+  // table's must not ride along in a run. Start waits for the answer, debounce included.
+  var url = document.getElementById("tm-train-url").value.trim();
+  tmDetectedTask = null;
+  tmDetectedImageCol = "";
+  tmDetectedLabelCol = "";
+  tmTaskError = "";
+  tmDetecting = !!url;
+  _tmShowDetected("", "", "");
+  if (url) document.getElementById("tm-task-badge").textContent = "detecting...";
+  tmGate();
   clearTimeout(_tmDetectDebounce);
   _tmDetectDebounce = setTimeout(tmDetectTask, 500);
 }
 
 // Detect the task and the columns from the train table; resolves true when it answered. Fills the
-// 3LC project when none is set.
+// 3LC project when none is set. A table that cannot be read leaves the task and columns as they
+// are and sets tmTaskError.
 function tmDetectTask() {
     var url = document.getElementById("tm-train-url").value.trim();
+    tmTaskError = "";
     if (!url) {
       tmDetectedTask = null;
       tmDetectedImageCol = "";
       tmDetectedLabelCol = "";
+      tmDetecting = false;
       _tmShowDetected("", "", "");
+      tmGate();
       return Promise.resolve(false);
     }
+    tmDetecting = true;
     document.getElementById("tm-task-badge").textContent = "detecting...";
+    tmGate();
+    // An answer for a table no longer in the field is dropped: that field's own detection answers.
+    var current = function() { return document.getElementById("tm-train-url").value.trim() === url; };
+    var failed = function(error) {
+      tmDetecting = false;
+      tmTaskError = error;
+      _tmSetTaskBadge("error", error);
+      tmGate();
+      return false;
+    };
 
     return _tmPost("/api/plugins/timm/detect-task", { url: url })
       .then(function(data) {
-        if (data.error) {
-          _tmSetTaskBadge("error", data.error);
-          return false;
+        if (!current()) return false;
+        if (!data || data.error || !data.task) {
+          return failed(String((data && (data.error || data.detail)) || "No task in the answer."));
         }
+        tmDetecting = false;
         tmDetectedTask = data.task;
         tmDetectedImageCol = data.image_column || "";
         tmDetectedLabelCol = data.label_column || "";
@@ -1020,38 +1111,42 @@ function tmDetectTask() {
           var projEl = document.getElementById("tm-3lc-project");
           if (!projEl.value.trim()) projEl.value = data.project_name;
         }
+        tmGate();
         return true;
       })
       .catch(function(e) {
-        _tmSetTaskBadge("error", String(e));
-        return false;
+        return current() ? failed(String(e)) : false;
       });
 }
 
 // ── Training ─────────────────────────────────────────────────
 function tmStartTraining() {
+  // Start is disabled while it cannot run; a stale state must not submit either.
+  if (_tmSubmitting || tmStartBlocker()) { tmGate(); return; }
   var data = tmCollectFormData();
-  if (!data.train_table_url.trim()) { alert("Please select a train table."); return; }
-  if (!data.model_name) { alert("Please select a model."); return; }
   // Launch through the SDK's PluginJobs client. project_name attributes the job in the generic
   // Queue & Progress panel — the host reads it from the run body only. Left blank, PluginJobs
   // fills it from the launch context (the project page the plugin was opened from). /run is
   // answered by the host itself (the job is queued, the worker is spawned later), so authFetch's
   // default timeout is enough here — the generous _tmFetch timeout is for the worker-proxied
   // routes only.
-  if (typeof PluginJobs === "undefined") { tmLog("Error: job tracker unavailable — reload the page."); return; }
   // The run body is self-contained: project_config rides inline, so a remote GPU worker needs no
   // local config store (SDK guide, "Run-body conventions for remote workers"). The preset's id
   // and name are set while the form is unchanged from it, so the job card can name it, and empty
   // otherwise. A run never saves a preset.
   var presetId = tmPresets ? tmPresets.presetId() : "";
   var config = Object.assign({}, data, { id: presetId, name: tmPresets ? tmPresets.presetName() : "" });
+  // One run per press: Start stays disabled until the run request answers.
+  _tmSubmitting = true;
+  tmGate();
   PluginJobs.start("timm", {
     config_id: presetId,
     project_name: (document.getElementById("tm-3lc-project").value || "").trim(),
     project_config: config,
   })
     .then(function(trainResp) {
+      _tmSubmitting = false;
+      tmGate();
       if (!trainResp || trainResp.error) {
         tmLog("Error: " + ((trainResp && trainResp.error) || "failed to start job"));
         return;
@@ -1061,7 +1156,7 @@ function tmStartTraining() {
       tmShowCurrentJob(trainResp.job_id, _tmJobLabel(config));
       _tmTrackJob(trainResp.job_id);
     })
-    .catch(function(e) { tmLog("Error starting: " + e); });
+    .catch(function(e) { _tmSubmitting = false; tmGate(); tmLog("Error starting: " + e); });
 }
 
 function tmStopCurrentJob() {
@@ -1353,6 +1448,10 @@ function _tmBindAutoSave() {
 
 // ── Init ─────────────────────────────────────────────────────
 (function() {
+  // Start and Swap follow every edit; what the page sets in code calls tmGate itself.
+  document.getElementById("tm-page").addEventListener("input", tmGate);
+  document.getElementById("tm-page").addEventListener("change", tmGate);
+  tmGate();
   tmInitSocket();
   _tmSeedFromHost();
   tmLoadModels();

@@ -26,6 +26,23 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - The run body's `project_config` carries the preset's `id` and `name` only while the form is
   unchanged from it, so the job card can name it. Requires SDK 0.5.5.
 
+#### Actions that cannot run yet
+
+- **Start waits until a run can start, and says why.** It stays disabled until there is a train
+  table with an image column, the table has been read, and a model from the list is chosen; the line
+  under it and its tooltip name the first thing missing ("Choose a train table to enable Start timm
+  Training.", "Wait while the train table is read to enable …", "Choose another train table to enable
+  …: this one could not be read.", "Choose a model from the list to enable …"), with the label the
+  button shows in Collect mode ("Start Collection"). It also waits for the model list, and says so when
+  no models could be loaded. This replaces the "Please select…" alerts. A press sends one run request:
+  Start stays disabled until it answers.
+- **Swap ⇅ is disabled while both table fields are empty**, and says so in its tooltip.
+- **The Train Table URL and Model are marked required** in the Hub's style: a red * on the label, and a
+  red wash while the field is empty.
+- The Train mode's tooltip on a table without labels reads "Choose a train table with a label column
+  to enable Train."
+- `/detect-task` answers a table that cannot be read with an `error` as well as its `details`.
+
 #### Data movement
 
 - **The manifest declares the data a run reads.** `[runtime] data_inputs` names the train and val
@@ -50,6 +67,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 - Runs are created under the project root the job carries (`ctx.project_root_url`), not the worker's
   configured root.
 
+### Fixed
+
+- **A run no longer sends the previous table's task and columns.** When the train table changed, the
+  task and the image and label columns detected for the table before stayed in the form until
+  detection answered, and for good when it failed, so a run started meanwhile read the new table by
+  the old table's column names. They are now cleared as soon as the table changes, Start waits for the
+  answer, and an answer for a table no longer in the field is ignored.
 
 ## [0.2.6] - 2026-09-11
 

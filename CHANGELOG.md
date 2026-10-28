@@ -9,6 +9,10 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ### Changed
 
+- Python 3.11 is now the minimum: Python 3.10 is no longer supported.
+
+### Changed
+
 #### Table fields
 
 - **Train Table URL and Validation Table URL are the Hub's table field (`<tlc-table-field>`).** Browse…, or a

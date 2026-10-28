@@ -29,13 +29,13 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 #### Actions that cannot run yet
 
 - **Start waits until a run can start, and says why.** It stays disabled until there is a train
-  table with an image column, the table has been read, and a model from the list is chosen; the line
-  under it and its tooltip name the first thing missing ("Choose a train table to enable Start timm
-  Training.", "Wait while the train table is read to enable …", "Choose another train table to enable
-  …: this one could not be read.", "Choose a model from the list to enable …"), with the label the
-  button shows in Collect mode ("Start Collection"). It also waits for the model list, and says so when
-  no models could be loaded. This replaces the "Please select…" alerts. A press sends one run request:
-  Start stays disabled until it answers.
+  table with an image column, the table has been read, and a model is named; the line under it and
+  its tooltip name the first thing missing ("Choose a train table to enable Start timm Training.",
+  "Wait while the train table is read to enable …", "Choose another train table to enable …: this one
+  could not be read.", "Choose a model to enable …"), with the label the button shows in Collect mode
+  ("Start Collection"). Any model name is accepted, listed or not: an untagged name like `resnet50`, a
+  preset's, or an architecture fine-tuned from a Pretrained Model URL. This replaces the "Please
+  select…" alerts. A press sends one run request: Start stays disabled until it answers.
 - **Swap ⇅ is disabled while both table fields are empty**, and says so in its tooltip.
 - **The Train Table URL and Model are marked required** in the Hub's style: a red * on the label, and a
   red wash while the field is empty.

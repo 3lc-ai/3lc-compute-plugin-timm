@@ -463,7 +463,6 @@ var tmCurrentMode = "train";
 var _tmCurrentJobId = null;
 var tmDetecting = false;        // the train table is being read (from the change, through the debounce)
 var tmTaskError = "";           // why the train table could not be read; "" when it was, or is not yet
-var tmModelsState = "loading";  // the model list: "loading", "ready" or "failed"
 var _tmSubmitting = false;      // Start was pressed and the run request has not answered yet
 
 var _TM_STORAGE_KEY = "timm_selected_config";  // the old config bar's key; the preset bar honours it once
@@ -714,15 +713,9 @@ function tmStartBlocker() {
   if (tmTaskError) return "Choose another train table to enable " + label + ": this one could not be read.";
   // "unknown" is a table without an image column (task_detection.py): nothing to train or collect on.
   if (tmDetectedTask === "unknown") return "Choose a train table with an image column to enable " + label + ".";
-  if (tmModelsState === "loading") return "Wait while the models load to enable " + label + ".";
-  if (tmModelsState === "failed" || !tmModelsCache || !tmModelsCache.length) {
-    return "Fix the problem shown in the Log to enable " + label + ": no models could be loaded.";
-  }
-  var model = document.getElementById("tm-model-search").value.trim();
-  if (!model) return "Choose a model to enable " + label + ".";
-  if (!tmModelsCache.some(function(m) { return m.name === model; })) {
-    return "Choose a model from the list to enable " + label + ".";
-  }
+  // Any model name timm can create is fine, listed or not: an untagged name like resnet50 (timm picks its
+  // default weights) or an architecture fine-tuned from a Pretrained Model URL. The list is only a picker.
+  if (!document.getElementById("tm-model-search").value.trim()) return "Choose a model to enable " + label + ".";
   if (typeof PluginJobs === "undefined") return "Reload the page to enable " + label + ".";
   return "";
 }
@@ -757,21 +750,12 @@ function _tmEnforceTaskMode(task) {
 // ── Model Search ─────────────────────────────────────────────
 function tmLoadModels() {
   if (tmModelsCache !== null) return;
-  tmModelsState = "loading";
-  tmGate();
   _tmFetchJson("/api/plugins/timm/models")
     .then(function(data) {
       tmModelsCache = Array.isArray(data) ? data : [];
-      tmModelsState = "ready";
       tmLog("Loaded " + tmModelsCache.length + " timm models");
-      tmGate();
     })
-    .catch(function(e) {
-      // The Model field tries again when it is next focused (tmOpenModelDropdown).
-      tmModelsState = "failed";
-      tmLog("Failed to load models: " + e);
-      tmGate();
-    });
+    .catch(function(e) { tmLog("Failed to load models: " + e); });
 }
 
 function tmOpenModelDropdown() {

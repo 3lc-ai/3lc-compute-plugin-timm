@@ -15,8 +15,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
   double-click in the empty field, opens Browse Tables, which opens at the field's table and tags the table the
   other field holds. The fields keep their ids, so presets, the swap button and `oninput=` work as before. The
   plugin needs Hub 1.2.0 (`min_frontend_version`).
-- **The Browse panel under Pretrained Model URL picks a file from a click anywhere on its row**, not only
-  on its Select button, and opens on a double-click in the empty field (from the SDK's data-source picker).
+- **The Browse panel under Pretrained Model URL is the SDK's file chooser:** a Location line, a path bar
+  that follows the browsing, a click that opens a folder or picks the file, the keyboard; and a
+  double-click in the empty field opens it.
 
 #### Presets
 

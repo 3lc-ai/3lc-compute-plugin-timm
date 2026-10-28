@@ -862,7 +862,7 @@ function tmAutoName(values) {
 
 // What the list shows after a preset's name: "resnet50 · classification".
 function tmPresetSummary(values) {
-  return (values.model_name || "?") + " \u00b7 " + (values.task_type || values.mode || "train");
+  return [values.model_name, values.task_type || values.mode];
 }
 
 function _tmShowDetected(task, imageCol, labelCol) {

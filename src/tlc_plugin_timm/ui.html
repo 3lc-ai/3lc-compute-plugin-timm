@@ -78,11 +78,13 @@
 <div id="tm-presets"></div>
 
     <!-- ── Input Tables ──────────────────────────────────── -->
-    <div class="card mb-16">
+    <div class="plugin-workflow-grid">
+    <div class="plugin-wide card mb-16">
       <div class="card-header">
         <div class="card-title"><span class="plugin-section-number">1</span> Data</div>
       </div>
       <div class="card-body">
+        <div class="plugin-table-pair">
         <div class="form-group">
           <!-- The Hub's required style: a red * on the label, a red wash while the field is empty. -->
           <label class="form-label required" for="tm-train-url">Training table</label>
@@ -91,7 +93,7 @@
                            oninput="tmOnTrainTableChange()"></tlc-table-field>
           <div class="form-help">Select your training data table. Task type and class names are auto-detected from the table schema.</div>
         </div>
-        <div style="display:flex;justify-content:center">
+        <div class="plugin-table-swap">
           <button type="button" class="btn btn-ghost btn-sm" id="tm-swap-btn" onclick="tmSwapUrls()"
                   title="Swap train / val URLs" data-title="Swap train / val URLs"
                   style="font-size:13px;padding:1px 6px;line-height:1">&#x21C5;</button>
@@ -101,6 +103,8 @@
           <tlc-table-field id="tm-val-url" placeholder="Paste URL or click Browse…"></tlc-table-field>
           <div class="form-help">Optional validation set for tracking accuracy during training. If empty, a split of the train table is used.</div>
         </div>
+
+        </div><!-- /plugin-table-pair -->
 
         <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
           <input type="checkbox" id="tm-use-latest">
@@ -307,7 +311,7 @@
               <option value="pacmap">PaCMAP</option>
             </select>
           </div>
-          <div class="form-group" style="margin-bottom:0;grid-column:span 2;display:flex;align-items:center;gap:6px;padding-top:18px">
+          <div class="form-group plugin-field-wide" style="margin-bottom:0;display:flex;align-items:center;gap:6px;padding-top:18px">
             <input type="checkbox" id="tm-full-embed" data-param-id="write_full_embeddings">
             <label for="tm-full-embed" style="font-size:11px;color:var(--text);cursor:pointer">Keep full (unreduced) embeddings</label>
           </div>
@@ -404,6 +408,7 @@
         <div id="tm-log" class="plugin-log-area tm-log-area"></div>
       </div>
     </div>
+</div><!-- /plugin-workflow-grid -->
 
 </div>
 

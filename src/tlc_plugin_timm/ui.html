@@ -168,7 +168,7 @@
 
         <!-- Training params -->
         <div id="tm-train-params">
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin-top:8px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Epochs</label>
               <input type="number" id="tm-epochs" class="form-control" value="20" min="1" max="1000" step="1" data-param-id="epochs">
@@ -190,7 +190,7 @@
               <input type="number" id="tm-lr" class="form-control" value="0.001" min="0.00001" max="1.0" step="0.0001" data-param-id="lr">
             </div>
           </div>
-          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin-top:8px">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Weight Decay</label>
               <input type="number" id="tm-wd" class="form-control" value="0.0001" min="0" max="1.0" step="0.0001" data-param-id="weight_decay">
@@ -220,7 +220,7 @@
 
           <!-- Augmentation -->
           <div style="margin-top:10px">
-            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px">
               <div class="form-group" style="margin-bottom:0">
                 <label class="form-label">Auto Augment</label>
                 <select id="tm-autoaug" class="form-control" data-param-id="auto_augment"
@@ -291,7 +291,7 @@
             <input type="text" id="tm-run-name" class="form-control" placeholder="Auto-generated if empty">
           </div>
         </div>
-        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,180px),1fr));gap:10px;margin-top:8px">
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Embeddings Dim</label>
             <select id="tm-embed-dim" class="form-control" data-param-id="image_embeddings_dim">

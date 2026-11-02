@@ -23,7 +23,7 @@
   display: flex; align-items: center; gap: 8px;
   transition: background .12s;
 }
-.tm-model-item:hover { background: var(--row-hover-bg); }
+.tm-model-item:hover:not(.tm-model-selected) { background: var(--row-hover-bg); }
 .tm-model-item .tm-model-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tm-model-item .tm-model-meta { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
 .tm-model-family-label {

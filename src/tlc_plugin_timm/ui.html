@@ -23,7 +23,7 @@
   display: flex; align-items: center; gap: 8px;
   transition: background .12s;
 }
-.tm-model-item:hover { background: var(--accent-light); }
+.tm-model-item:hover:not(.tm-model-selected) { background: var(--row-hover-bg); }
 .tm-model-item .tm-model-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
 .tm-model-item .tm-model-meta { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
 .tm-model-family-label {
@@ -33,11 +33,11 @@
 }
 .tm-model-family-label:first-child { border-top: none; }
 .tm-model-popular .tm-model-name { font-weight: 600; }
-.tm-model-selected { background: var(--accent-light); }
+.tm-model-selected { background: var(--row-selected-bg, var(--accent-light)); }
 /* Task badge styling */
-.tm-task-badge-classification { background: var(--accent); color: #fff; padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-.tm-task-badge-feature_extraction { background: var(--golden); color: #fff; padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
-.tm-task-badge-unknown { background: var(--text-muted); color: #fff; padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.tm-task-badge-classification { background: var(--badge-blue-bg); color: var(--badge-blue-text); padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.tm-task-badge-feature_extraction { background: var(--badge-purple-bg); color: var(--badge-purple-text); padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.tm-task-badge-unknown { background: var(--badge-gray-bg); color: var(--badge-gray-text); padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
 .tm-class-list { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
 /* Completed job links */
 .tm-run-link { font-size: 10px; text-decoration: none; color: var(--accent); }
@@ -158,10 +158,10 @@
           <!-- Mode toggle -->
           <div class="form-group">
             <label class="form-label">Mode</label>
-            <div style="display:flex;gap:6px">
-              <button type="button" class="btn btn-sm btn-primary" id="tm-mode-train"
+            <div class="segmented-control" role="group" aria-label="Mode">
+              <button type="button" class="btn btn-sm active" aria-pressed="true" id="tm-mode-train"
                       onclick="tmSetMode('train')">Train</button>
-              <button type="button" class="btn btn-sm btn-secondary" id="tm-mode-collect"
+              <button type="button" class="btn btn-sm" aria-pressed="false" id="tm-mode-collect"
                       onclick="tmSetMode('collect')">Collect</button>
             </div>
             <div class="text-sm text-muted" id="tm-mode-help" style="margin-top:3px">
@@ -250,11 +250,11 @@
             </div>
             <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px">
               <div style="display:flex;align-items:center;gap:5px">
-                <input type="checkbox" id="tm-hflip" checked style="accent-color:var(--btn-primary-bg);width:15px;height:15px" data-param-id="hflip">
+                <input type="checkbox" id="tm-hflip" checked style="accent-color:var(--accent);width:15px;height:15px" data-param-id="hflip">
                 <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-hflip').click()">Horizontal Flip</label>
               </div>
               <div style="display:flex;align-items:center;gap:5px">
-                <input type="checkbox" id="tm-color-jitter" checked style="accent-color:var(--btn-primary-bg);width:15px;height:15px" data-param-id="color_jitter">
+                <input type="checkbox" id="tm-color-jitter" checked style="accent-color:var(--accent);width:15px;height:15px" data-param-id="color_jitter">
                 <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-color-jitter').click()">Color Jitter</label>
               </div>
             </div>
@@ -326,23 +326,23 @@
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px">
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-collect-loss" checked style="accent-color:var(--btn-primary-bg);width:15px;height:15px" data-param-id="collect_loss">
+            <input type="checkbox" id="tm-collect-loss" checked style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collect_loss">
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-collect-loss').click()">Collect Loss</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-sampling-weights" style="accent-color:var(--btn-primary-bg);width:15px;height:15px" data-param-id="sampling_weights">
+            <input type="checkbox" id="tm-sampling-weights" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="sampling_weights">
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-sampling-weights').click()">Sampling Weights</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-exclude-zero-train" style="accent-color:var(--btn-primary-bg);width:15px;height:15px" data-param-id="exclude_zero_weight_training">
+            <input type="checkbox" id="tm-exclude-zero-train" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="exclude_zero_weight_training">
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-exclude-zero-train').click()">Exclude Zero (Train)</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-val-only" style="accent-color:var(--btn-primary-bg);width:15px;height:15px" data-param-id="collection_val_only">
+            <input type="checkbox" id="tm-val-only" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_val_only">
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-val-only').click()">Val Only Collection</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-disable-collection" style="accent-color:var(--btn-primary-bg);width:15px;height:15px" data-param-id="collection_disable">
+            <input type="checkbox" id="tm-disable-collection" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_disable">
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-disable-collection').click()">Disable Collection</label>
           </div>
         </div>
@@ -649,13 +649,17 @@ function tmSetMode(mode) {
   var trainParams = document.getElementById("tm-train-params");
 
   if (mode === "collect") {
-    trainBtn.className = "btn btn-sm btn-secondary";
-    collectBtn.className = "btn btn-sm btn-primary";
+    trainBtn.className = "btn btn-sm";
+    trainBtn.setAttribute("aria-pressed", "false");
+    collectBtn.className = "btn btn-sm active";
+    collectBtn.setAttribute("aria-pressed", "true");
     helpEl.textContent = "Run inference and collect embeddings + predictions (no training).";
     trainParams.style.display = "none";
   } else {
-    trainBtn.className = "btn btn-sm btn-primary";
-    collectBtn.className = "btn btn-sm btn-secondary";
+    trainBtn.className = "btn btn-sm active";
+    trainBtn.setAttribute("aria-pressed", "true");
+    collectBtn.className = "btn btn-sm";
+    collectBtn.setAttribute("aria-pressed", "false");
     helpEl.textContent = "Train a model with 3LC metrics collection.";
     trainParams.style.display = "";
   }

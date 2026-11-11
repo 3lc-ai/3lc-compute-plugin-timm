@@ -75,7 +75,17 @@ def get_route_handlers() -> list[BaseRouteHandler]:
     def list_models_route(request: Request[Any, Any, Any]) -> list[dict[str, Any]]:
         pretrained_param = request.query_params.get("pretrained", "true")
         pretrained = pretrained_param.lower() != "false"
-        return list_models(pretrained_only=pretrained)
+        models = list_models(pretrained_only=pretrained)
+        query = request.query_params.get("q", "").strip().lower()
+        if query:
+            models = [model for model in models if query in model["name"].lower()]
+        if "limit" in request.query_params:
+            try:
+                limit = min(100, max(1, int(request.query_params["limit"])))
+            except ValueError:
+                limit = 20
+            models = models[:limit]
+        return models
 
     @get("/models/{name:str}/info", sync_to_thread=True)
     def model_info(name: FromPath[str]) -> dict[str, Any]:

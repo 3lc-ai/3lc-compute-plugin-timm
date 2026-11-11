@@ -21,6 +21,8 @@ _INLINE_CONFIG = {
     "model_name": "resnet18",
     "train_table_url": "s3://b/t",
     "mode": "train",
+    "image_column": "image",
+    "label_column": "label",
     "params": {},
 }
 
@@ -75,6 +77,42 @@ class _NoRootContext:
 def test_run_job_without_a_root_leaves_it_empty(monkeypatch: pytest.MonkeyPatch) -> None:
     params = _run_job_params(monkeypatch, _NoRootContext())
     assert params["_project_root_url"] == ""
+
+
+def test_training_progress_moves_with_batches_and_does_not_regress_at_validation(monkeypatch, tmp_path):
+    events = []
+    ticks = iter(range(0, 10000, 10))
+    monkeypatch.setattr("time.monotonic", lambda: next(ticks))
+
+    def fake_train(tables, params, callbacks):
+        for phase, fraction in (("train", 0.5), ("train", 1.0), ("val", 0.5), ("val", 1.0)):
+            callbacks["on_epoch"](1, 2, {"phase": phase, "batch_frac": fraction, "batch": 1, "total_batches": 2})
+        callbacks["on_epoch"](1, 2, {"val_acc": 50})
+        callbacks["on_epoch"](2, 2, {"phase": "train", "batch_frac": 0.5, "batch": 1, "total_batches": 2})
+        callbacks["on_status"]("Fitting umap on train embeddings: (1000, 1280) → 2D")
+        return {}
+
+    stub = types.ModuleType("tlc_plugin_timm.trainer")
+    vars(stub)["train"] = fake_train
+    vars(stub)["collect"] = fake_train
+    monkeypatch.setitem(sys.modules, "tlc_plugin_timm.trainer", stub)
+    ctx = JobContext(
+        "progress",
+        {"project_config": _INLINE_CONFIG, "project_root_url": str(tmp_path)},
+        tmp_path,
+        sink=events.append,
+        cancel_event=threading.Event(),
+    )
+    TimmPlugin().run_job(ctx)
+    progress = [
+        event for event in events if event["event"] == "progress" and str(event.get("label", "")).startswith("Epoch")
+    ]
+    assert [event["percent"] for event in progress] == [20, 40, 45, 50, 50, 70]
+    assert "batch 1/2" in progress[0]["label"]
+    assert progress[-1]["timing"]["eta_s"] > 0
+    collection = [event for event in events if event["event"] == "progress" and "Fitting" in event.get("label", "")]
+    assert collection[0]["percent"] == -1
+    assert "umap" in collection[0]["label"]
 
 
 class _FakeTable:

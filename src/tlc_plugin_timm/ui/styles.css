@@ -1,0 +1,52 @@
+
+/* ── timm-specific styles ── */
+.tm-metrics { display: flex; gap: 8px; flex-wrap: wrap; margin-top: 6px; }
+.tm-log-area { height: 140px; max-height: none; }
+.tm-log-area div { padding: 1px 0; }
+.tm-queue-status { font-size: 9px; font-weight: 600; letter-spacing: 0.3px; padding: 1px 7px; border-radius: 3px; }
+.tm-job-info { font-size: 9px; color: var(--text-muted); }
+
+/* Model search */
+.tm-model-search { position: relative; }
+.tm-model-dropdown {
+  position: absolute; top: 100%; left: 0; right: 0; z-index: 100;
+  background: var(--bg-card); border: 1px solid var(--border-light);
+  border-radius: 6px; max-height: 300px; overflow-y: auto;
+  box-shadow: 0 4px 12px rgba(0,0,0,0.12); display: none;
+}
+.tm-model-dropdown.open { display: block; }
+.tm-model-item {
+  padding: 6px 12px; cursor: pointer; font-size: 11px;
+  display: flex; align-items: center; gap: 8px;
+  transition: background .12s;
+}
+.tm-model-item:hover:not(.tm-model-selected) { background: var(--row-hover-bg); }
+.tm-model-item .tm-model-name { flex: 1; min-width: 0; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tm-model-item .tm-model-meta { color: var(--text-muted); font-size: 10px; white-space: nowrap; }
+.tm-model-family-label {
+  font-size: 9px; font-weight: 700; text-transform: uppercase;
+  letter-spacing: .06em; color: var(--text-muted);
+  padding: 8px 12px 3px; border-top: 1px solid var(--border-light);
+}
+.tm-model-family-label:first-child { border-top: none; }
+.tm-model-popular .tm-model-name { font-weight: 600; }
+.tm-model-selected { background: var(--row-selected-bg, var(--accent-light)); }
+/* Task badge styling */
+.tm-task-badge-classification { background: var(--badge-blue-bg); color: var(--badge-blue-text); padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.tm-task-badge-feature_extraction { background: var(--badge-purple-bg); color: var(--badge-purple-text); padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.tm-task-badge-unknown { background: var(--badge-gray-bg); color: var(--badge-gray-text); padding: 1px 8px; border-radius: 3px; font-size: 10px; font-weight: 600; }
+.tm-class-list { font-size: 10px; color: var(--text-muted); margin-top: 2px; }
+/* Completed job links */
+.tm-run-link { font-size: 10px; text-decoration: none; color: var(--accent); }
+.tm-run-link:hover { text-decoration: underline; }
+/* Compact running-state banner (seeded from the host job list on mount) */
+.tm-live-banner {
+  display: flex; align-items: center; gap: 10px; flex-wrap: wrap;
+  margin-bottom: 14px; padding: 10px 14px; font-size: 12px;
+  background: var(--accent-light); border: 1px solid var(--border);
+  border-left: 3px solid var(--accent); border-radius: var(--radius-lg, 8px);
+}
+.tm-live-banner .tm-live-title { font-weight: 600; }
+.tm-live-banner .tm-live-detail { color: var(--text-muted); }
+.tm-live-banner .tm-live-error { color: var(--danger-color); }
+.tm-live-banner .tm-live-actions { margin-left: auto; display: flex; gap: 6px; align-items: center; }

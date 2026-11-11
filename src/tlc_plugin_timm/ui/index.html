@@ -1,0 +1,342 @@
+<!-- Copyright 2026 3LC Inc. -->
+<!-- SPDX-License-Identifier: Apache-2.0 -->
+<!-- timm — self-contained plugin UI fragment -->
+<style>{{asset:styles.css}}</style>
+
+<div class="plugin-page plugin-workbench" id="tm-page">
+<!-- Workflow heading -->
+<header class="plugin-page-heading">
+  <h1>timm</h1>
+  <p>Train an image classifier or collect predictions and embeddings.</p>
+</header>
+
+<!-- ── Live-job banner: the fragment is a launcher, the Queue is the durable view ── -->
+<div id="tm-live-banner" class="tm-live-banner" style="display:none">
+  <span id="tm-live-status" class="tm-queue-status plugin-status-running">running</span>
+  <span id="tm-live-title" class="tm-live-title">timm job</span>
+  <span id="tm-live-detail" class="tm-live-detail"></span>
+  <span id="tm-live-error" class="tm-live-error" style="display:none"></span>
+  <span class="tm-live-actions">
+    <a id="tm-live-open" href="#" class="btn btn-sm btn-secondary" style="display:none">Open</a>
+    <span class="text-muted" style="font-size:10px">Watch it in the Queue &amp; Progress panel</span>
+  </span>
+</div>
+
+<!-- ── Presets: the SDK's preset bar renders here (_tlcPluginPresets) ── -->
+<div id="tm-presets"></div>
+
+    <!-- ── Input Tables ──────────────────────────────────── -->
+    <div class="plugin-workflow-grid">
+    <div class="plugin-wide card mb-16">
+      <div class="card-header">
+        <div class="card-title"><span class="plugin-section-number">1</span> Data</div>
+      </div>
+      <div class="card-body">
+        <div class="plugin-table-pair">
+        <div class="form-group">
+          <!-- The Hub's required style: a red * on the label, a red wash while the field is empty. -->
+          <label class="form-label required" for="tm-train-url">Training table</label>
+          <!-- The Hub's table field: Browse…, or a double-click in the empty field, opens Browse Tables. -->
+          <tlc-table-field id="tm-train-url" placeholder="Paste URL or click Browse…" required
+                           oninput="tmOnTrainTableChange()"></tlc-table-field>
+          <div class="form-help">Select your training data table. Task type and class names are auto-detected from the table schema.</div>
+        </div>
+        <div class="plugin-table-swap">
+          <button type="button" class="btn btn-ghost btn-sm" id="tm-swap-btn" onclick="tmSwapUrls()"
+                  title="Swap train / val URLs" data-title="Swap train / val URLs"
+                  style="font-size:13px;padding:1px 6px;line-height:1">&#x21C5;</button>
+        </div>
+        <div class="form-group">
+          <label class="form-label" for="tm-val-url">Validation table <span class="text-muted">(optional — uses train table if empty)</span></label>
+          <tlc-table-field id="tm-val-url" placeholder="Paste URL or click Browse…"></tlc-table-field>
+          <div class="form-help">Optional validation set for tracking accuracy during training. If empty, a split of the train table is used.</div>
+        </div>
+
+        </div><!-- /plugin-table-pair -->
+
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+          <input type="checkbox" id="tm-use-latest">
+          <label for="tm-use-latest" style="cursor:pointer;font-size:10px">
+            Use the latest table revision when the job starts
+          </label>
+        </div>
+
+        <!-- Detected task + columns -->
+        <div id="tm-detection-area" class="plugin-form-grid">
+          <div class="form-group">
+            <label class="form-label">Detected Task</label>
+            <div>
+              <span id="tm-task-badge" class="plugin-task-badge">--</span>
+              <span id="tm-task-detail" class="text-sm text-muted" style="margin-left:6px"></span>
+            </div>
+            <div id="tm-class-names" class="tm-class-list"></div>
+          </div>
+          <div class="form-group">
+            <label class="form-label">Columns</label>
+            <div class="text-sm">
+              Image: <strong id="tm-image-col">--</strong>
+              &nbsp; Label: <strong id="tm-label-col">--</strong>
+              <span id="tm-num-classes" class="text-muted"></span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Step 3: timm Settings ─────────────────────────── -->
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title"><span class="plugin-section-number">2</span> Model</div>
+      </div>
+      <div class="card-body">
+
+        <div class="plugin-form-grid">
+          <!-- Model search -->
+          <div class="form-group">
+            <label class="form-label required" for="tm-model-search">Model</label>
+            <div class="tm-model-search">
+              <input type="text" id="tm-model-search" class="form-control" required
+                     placeholder="Search models (e.g. resnet50, vit)..."
+                     oninput="tmFilterModels()" onfocus="tmOpenModelDropdown()" autocomplete="off">
+              <div id="tm-model-dropdown" class="tm-model-dropdown"></div>
+            </div>
+            <div id="tm-model-info" class="text-sm text-muted" style="margin-top:3px"></div>
+            <div class="form-help">Search by name or family (e.g. "resnet", "vit", "efficientnet"). Popular models are shown first.</div>
+          </div>
+          <!-- Mode toggle -->
+          <div class="form-group">
+            <label class="form-label">Mode</label>
+            <div class="segmented-control" role="group" aria-label="Mode">
+              <button type="button" class="btn btn-sm active" aria-pressed="true" id="tm-mode-train"
+                      onclick="tmSetMode('train')">Train</button>
+              <button type="button" class="btn btn-sm" aria-pressed="false" id="tm-mode-collect"
+                      onclick="tmSetMode('collect')">Collect</button>
+            </div>
+            <div class="text-sm text-muted" id="tm-mode-help" style="margin-top:3px">
+              Train a model with 3LC metrics collection.
+            </div>
+          </div>
+        </div>
+
+        <!-- Training params -->
+        <div id="tm-train-params">
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Epochs</label>
+              <input type="number" id="tm-epochs" class="form-control" value="{{field:epochs.default}}" min="{{field:epochs.min}}" max="{{field:epochs.max}}" step="{{field:epochs.step}}" data-param-id="epochs">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Batch Size</label>
+              <input type="number" id="tm-batch" class="form-control" value="{{field:batch_size.default}}" min="{{field:batch_size.min}}" max="{{field:batch_size.max}}" step="{{field:batch_size.step}}" data-param-id="batch_size">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Workers</label>
+              <input type="number" id="tm-workers" class="form-control" value="{{field:num_workers.default}}" min="{{field:num_workers.min}}" max="{{field:num_workers.max}}" step="{{field:num_workers.step}}" data-param-id="num_workers">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Image Size</label>
+              <input type="number" id="tm-imgsz" class="form-control" value="{{field:image_size.default}}" min="{{field:image_size.min}}" max="{{field:image_size.max}}" step="{{field:image_size.step}}" data-param-id="image_size">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Learning Rate</label>
+              <input type="number" id="tm-lr" class="form-control" value="{{field:lr.default}}" min="{{field:lr.min}}" max="{{field:lr.max}}" step="{{field:lr.step}}" data-param-id="lr">
+            </div>
+          </div>
+          <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Weight Decay</label>
+              <input type="number" id="tm-wd" class="form-control" value="{{field:weight_decay.default}}" min="{{field:weight_decay.min}}" max="{{field:weight_decay.max}}" step="{{field:weight_decay.step}}" data-param-id="weight_decay">
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Optimizer</label>
+              <select id="tm-optimizer" class="form-control" data-param-id="optimizer">{{field:optimizer.options}}</select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Scheduler</label>
+              <select id="tm-scheduler" class="form-control" data-param-id="scheduler">{{field:scheduler.options}}</select>
+            </div>
+            <div class="form-group" style="margin-bottom:0">
+              <label class="form-label">Warmup Epochs</label>
+              <input type="number" id="tm-warmup" class="form-control" value="{{field:warmup_epochs.default}}" min="{{field:warmup_epochs.min}}" max="{{field:warmup_epochs.max}}" step="{{field:warmup_epochs.step}}" data-param-id="warmup_epochs">
+            </div>
+          </div>
+
+          <!-- Augmentation -->
+          <div style="margin-top:10px">
+            <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px">
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Auto Augment</label>
+                <select id="tm-autoaug" class="form-control" data-param-id="auto_augment"
+                        title="Automatic augmentation policy applied during training">{{field:auto_augment.options}}</select>
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">Random Erasing</label>
+                <input type="number" id="tm-reprob" class="form-control" value="{{field:reprob.default}}" min="{{field:reprob.min}}" max="{{field:reprob.max}}" step="{{field:reprob.step}}" data-param-id="reprob">
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">MixUp Alpha</label>
+                <input type="number" id="tm-mixup" class="form-control" value="{{field:mixup_alpha.default}}" min="{{field:mixup_alpha.min}}" max="{{field:mixup_alpha.max}}" step="{{field:mixup_alpha.step}}" data-param-id="mixup_alpha">
+              </div>
+              <div class="form-group" style="margin-bottom:0">
+                <label class="form-label">CutMix Alpha</label>
+                <input type="number" id="tm-cutmix" class="form-control" value="{{field:cutmix_alpha.default}}" min="{{field:cutmix_alpha.min}}" max="{{field:cutmix_alpha.max}}" step="{{field:cutmix_alpha.step}}" data-param-id="cutmix_alpha">
+              </div>
+            </div>
+            <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px">
+              <div style="display:flex;align-items:center;gap:5px">
+                <input type="checkbox" id="tm-hflip" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="hflip" {{field:hflip.checked}}>
+                <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-hflip').click()">Horizontal Flip</label>
+              </div>
+              <div style="display:flex;align-items:center;gap:5px">
+                <input type="checkbox" id="tm-color-jitter" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="color_jitter" {{field:color_jitter.checked}}>
+                <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-color-jitter').click()">Color Jitter</label>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- Pretrained Model URL (fine-tune from existing checkpoint) -->
+        <div class="form-group" style="margin-top:10px">
+          <label class="form-label" for="tm-pretrained-url">Pretrained Model URL <span class="text-muted">(optional — fine-tune from existing checkpoint)</span></label>
+          <!-- SDK data-source widget (rendered at init): text input keeps id tm-pretrained-url,
+               plus a Browse… panel backed by the SDK's /browse route. -->
+          <div id="tm-pretrained-ds"></div>
+        </div>
+
+        <div style="display:flex;align-items:center;gap:6px;margin-bottom:10px">
+          <input type="checkbox" id="tm-copy-model" checked>
+          <label for="tm-copy-model" style="cursor:pointer;font-size:10px">
+            Copy best model to run folder
+            <span class="text-muted">(store checkpoint alongside run data)</span>
+          </label>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Step 4: 3LC Settings ──────────────────────────── -->
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title"><span class="plugin-section-number">3</span> Output &amp; metrics</div>
+      </div>
+      <div class="card-body">
+        <div class="plugin-form-grid">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="tm-3lc-project">3LC Project</label>
+            <input type="text" id="tm-3lc-project" class="form-control" placeholder="Project from train table">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label" for="tm-run-name">Run Name</label>
+            <input type="text" id="tm-run-name" class="form-control" placeholder="Auto-generated if empty">
+          </div>
+        </div>
+        <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Embeddings Dim</label>
+            <select id="tm-embed-dim" class="form-control" data-param-id="image_embeddings_dim">{{field:image_embeddings_dim.options}}</select>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Embeddings Reducer</label>
+            <select id="tm-embed-reducer" class="form-control" data-param-id="image_embeddings_reducer">{{field:image_embeddings_reducer.options}}</select>
+          </div>
+          <div class="form-group plugin-field-wide" style="margin-bottom:0;display:flex;align-items:center;gap:6px;padding-top:18px">
+            <input type="checkbox" id="tm-full-embed" data-param-id="write_full_embeddings" {{field:write_full_embeddings.checked}}>
+            <label for="tm-full-embed" style="font-size:11px;color:var(--text);cursor:pointer">Keep full (unreduced) embeddings</label>
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Collection Start Epoch</label>
+            <input type="number" id="tm-collect-start" class="form-control" value="{{field:collection_epoch_start.default}}" min="{{field:collection_epoch_start.min}}" max="{{field:collection_epoch_start.max}}" step="{{field:collection_epoch_start.step}}" data-param-id="collection_epoch_start" placeholder="best only">
+          </div>
+          <div class="form-group" style="margin-bottom:0">
+            <label class="form-label">Collection Interval</label>
+            <input type="number" id="tm-collect-interval" class="form-control" value="{{field:collection_interval.default}}" min="{{field:collection_interval.min}}" max="{{field:collection_interval.max}}" step="{{field:collection_interval.step}}" data-param-id="collection_interval" title="Collect every N epochs from the start epoch onward. Ignored unless a start epoch is set.">
+          </div>
+        </div>
+        <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px">
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="tm-collect-loss" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collect_loss" {{field:collect_loss.checked}}>
+            <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-collect-loss').click()">Collect Loss</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="tm-sampling-weights" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="sampling_weights" {{field:sampling_weights.checked}}>
+            <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-sampling-weights').click()">Sampling Weights</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="tm-exclude-zero-train" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="exclude_zero_weight_training" {{field:exclude_zero_weight_training.checked}}>
+            <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-exclude-zero-train').click()">Exclude Zero (Train)</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="tm-val-only" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_val_only" {{field:collection_val_only.checked}}>
+            <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-val-only').click()">Val Only Collection</label>
+          </div>
+          <div style="display:flex;align-items:center;gap:5px">
+            <input type="checkbox" id="tm-disable-collection" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_disable" {{field:collection_disable.checked}}>
+            <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-disable-collection').click()">Disable Collection</label>
+          </div>
+        </div>
+
+        <!-- Actions -->
+        <div class="plugin-action-bar">
+          <button class="btn btn-primary" id="tm-train-btn" onclick="tmStartTraining()"
+                  aria-describedby="tm-train-why">Start timm Training</button>
+        </div>
+        <!-- Why Start cannot run yet (tmGate). Always one line high, so the page does not move as it comes and goes. -->
+        <div class="text-sm text-muted" id="tm-train-why" style="margin-top:6px;line-height:1.5;min-height:1.5em"></div>
+      </div>
+    </div>
+
+    <!-- ── Queue & Progress ─────────────────────────────── -->
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">Job status</div>
+      </div>
+      <div class="card-body">
+        <div id="tm-current-job" style="display:none">
+          <div style="display:flex;align-items:center;gap:8px;margin-bottom:4px">
+            <span id="tm-current-label" class="text-sm" style="font-weight:600">--</span>
+            <span id="tm-current-status" class="tm-queue-status plugin-status-running">running</span>
+            <span style="margin-left:auto;display:flex;gap:6px;align-items:center">
+              <a id="tm-current-run-link" href="#" class="btn btn-sm btn-secondary" style="display:none">Open</a>
+              <button class="btn btn-danger btn-sm" id="tm-stop-btn" style="display:none" onclick="tmStopCurrentJob()">Stop</button>
+            </span>
+          </div>
+          <div id="tm-current-info" class="tm-job-info" style="margin-bottom:6px"></div>
+          <div style="margin-bottom:4px">
+            <div style="display:flex;align-items:center;justify-content:space-between;margin-bottom:3px">
+              <span id="tm-epoch-label" class="text-sm">Epoch 0/0</span>
+              <span id="tm-pct-label" class="text-sm" style="font-weight:600">0%</span>
+            </div>
+            <div class="plugin-progress-wrap">
+              <div id="tm-epoch-bar" class="plugin-progress-bar" style="width:0%"></div>
+            </div>
+          </div>
+          <div id="tm-timing" class="text-sm text-muted" style="margin-bottom:6px"></div>
+          <div id="tm-current-metrics" class="tm-metrics"></div>
+        </div>
+        <div id="tm-no-current" class="text-sm text-muted">No active job.</div>
+
+        <div id="tm-queue-section" style="display:none;margin-top:14px">
+          <div class="text-sm" style="font-weight:600;margin-bottom:6px">Pending</div>
+          <div id="tm-queue-list"></div>
+        </div>
+
+        <div id="tm-completed-section" style="display:none;margin-top:14px">
+          <div class="text-sm" style="font-weight:600;margin-bottom:6px">Recent</div>
+          <div id="tm-completed-list"></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- ── Log ──────────────────────────────────────────── -->
+    <div class="card mb-16">
+      <div class="card-header">
+        <div class="card-title">Log</div>
+      </div>
+      <div class="card-body" style="padding:0">
+        <div id="tm-log" class="plugin-log-area tm-log-area"></div>
+      </div>
+    </div>
+</div><!-- /plugin-workflow-grid -->
+
+</div>
+
+<script>{{asset:app.js}}</script>

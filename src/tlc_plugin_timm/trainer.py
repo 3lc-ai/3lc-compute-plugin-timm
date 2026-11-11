@@ -18,7 +18,25 @@ import torch.nn.functional as F  # noqa: N812  (PyTorch's conventional alias)
 from tlc_plugin_sdk.shared.url_utils import normalize_url
 from torch.utils.data import DataLoader, Dataset
 
+from .data_loading import reader_initializer
+from .run_metadata import record_run_metadata
+
 logger = logging.getLogger(__name__)
+
+
+def _device(value: Any) -> torch.device:
+    """Honor an explicit CPU/CUDA choice; auto preserves existing selection."""
+    requested = str(value or "auto").strip().lower()
+    if requested not in {"auto", "cpu", "cuda"}:
+        msg = "Device must be auto, cpu or cuda"
+        raise ValueError(msg)
+    if requested == "cpu":
+        return torch.device("cpu")
+    available = torch.cuda.is_available()
+    if requested == "cuda" and not available:
+        msg = "CUDA was requested but is not available on this node"
+        raise ValueError(msg)
+    return torch.device("cuda" if available else "cpu")
 
 
 def _to_bool(val: Any) -> bool:
@@ -92,7 +110,8 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
     Args:
         tables: Dict with 'train' and optional 'val' table URLs.
         params: Training parameters (from config.params + internal fields).
-        callbacks: Dict with 'on_epoch', 'on_status', 'is_cancelled' callables.
+        callbacks: Dict with 'on_epoch', 'on_run', 'on_status', 'is_cancelled' callables.
+            'on_run' receives the canonical URL as soon as a run is created.
 
     Returns:
         Dict with 'run_url' and 'final_metrics'.
@@ -104,6 +123,7 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
 
     on_epoch = callbacks.get("on_epoch", lambda *a: None)
     on_status = callbacks.get("on_status", lambda m: None)
+    on_run = callbacks.get("on_run", lambda url: None)
     is_cancelled = callbacks.get("is_cancelled", lambda: False)
 
     # ── Extract params ──
@@ -150,12 +170,17 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
     collection_interval = _parse_int(params.get("collection_interval", "1"), default=1)
     periodic_collection = collection_epoch_start_int > 0 and collection_interval > 0
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = _device(params.get("device"))
     on_status(f"Device: {device}")
 
     # ── Load tables ──
     on_status("Loading training table...")
     train_table = tlc.Table.from_url(tables["train"])
+    required_columns = [image_column] + ([label_column] if task_type == "classification" else [])
+    for column in required_columns:
+        if not column or column not in train_table.rows_schema.values:
+            msg = f"Select an existing image and label column before training; missing column: {column!r}"
+            raise ValueError(msg)
     num_classes = 0
 
     if label_column:
@@ -273,6 +298,7 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
         shuffle=shuffle if sampler is None else False,
         sampler=sampler,
         num_workers=num_workers,
+        worker_init_fn=reader_initializer(),
         pin_memory=True,
         drop_last=True,
     )
@@ -281,6 +307,7 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
         batch_size=batch_size,
         shuffle=False,
         num_workers=num_workers,
+        worker_init_fn=reader_initializer(),
         pin_memory=True,
     )
 
@@ -324,6 +351,41 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
                 run_name=run_name,
                 description=f"timm {model_name} training",
             )
+            record_run_metadata(
+                run,
+                train_table,
+                val_table,
+                {
+                    **{key: value for key, value in params.items() if not key.startswith("_")},
+                    "mode": "train",
+                    "model_name": model_name,
+                    "task_type": task_type,
+                    "image_column": image_column,
+                    "label_column": label_column,
+                    "epochs": epochs,
+                    "batch_size": batch_size,
+                    "image_size": image_size,
+                    "lr": lr,
+                    "weight_decay": weight_decay,
+                    "optimizer": optimizer_name,
+                    "scheduler": scheduler_name,
+                    "warmup_epochs": warmup_epochs,
+                    "num_workers": num_workers,
+                    "sampling_weights": sampling_weights,
+                    "exclude_zero_weight_training": exclude_zero_training,
+                    "collection_val_only": collection_val_only,
+                    "image_embeddings_dim": embeddings_dim,
+                    "image_embeddings_reducer": embeddings_reducer,
+                    "write_full_embeddings": write_full_embeddings,
+                    "auto_augment": auto_augment,
+                    "reprob": reprob,
+                    "mixup_alpha": mixup_alpha,
+                    "cutmix_alpha": cutmix_alpha,
+                    "hflip": hflip,
+                    "color_jitter": color_jitter,
+                },
+            )
+            on_run(str(run.url))
             on_status(f"3LC Run created: {run_name}")
             on_status(f"Run URL: {run.url}")
         except Exception as e:
@@ -410,7 +472,11 @@ def train(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str, A
             train_total += images.size(0)
 
             # Batch progress
-            if (batch_idx + 1) % max(1, len(train_loader) // 10) == 0 or batch_idx == len(train_loader) - 1:
+            if (
+                batch_idx == 0
+                or (batch_idx + 1) % max(1, len(train_loader) // 10) == 0
+                or batch_idx == len(train_loader) - 1
+            ):
                 batch_frac = (batch_idx + 1) / len(train_loader)
                 on_epoch(
                     epoch,
@@ -613,7 +679,7 @@ def collect(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str,
     Args:
         tables: Dict with 'train' and optional 'val' table URLs.
         params: Collection parameters.
-        callbacks: Dict with 'on_status', 'is_cancelled' callables.
+        callbacks: Dict with 'on_run', 'on_status', 'is_cancelled' callables.
 
     Returns:
         Dict with 'run_url'.
@@ -624,6 +690,7 @@ def collect(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str,
     import tlc
 
     on_status = callbacks.get("on_status", lambda m: None)
+    on_run = callbacks.get("on_run", lambda url: None)
     is_cancelled = callbacks.get("is_cancelled", lambda: False)
 
     model_name = params.get("_model_name", "resnet50")
@@ -640,7 +707,7 @@ def collect(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str,
     collect_loss = _to_bool(params.get("collect_loss", True))
     collection_val_only = _to_bool(params.get("collection_val_only", False))
 
-    device = torch.device("cuda" if torch.cuda.is_available() else "cpu")
+    device = _device(params.get("device"))
     on_status(f"Device: {device}")
 
     # Load tables
@@ -710,6 +777,25 @@ def collect(tables: dict[str, str], params: dict[str, Any], callbacks: dict[str,
         run_name=run_name,
         description=f"timm {model_name} collection",
     )
+    record_run_metadata(
+        run,
+        train_table,
+        val_table,
+        {
+            **{key: value for key, value in params.items() if not key.startswith("_")},
+            "mode": "collect",
+            "model_name": model_name,
+            "image_column": image_column,
+            "label_column": label_column,
+            "batch_size": batch_size,
+            "image_size": image_size,
+            "num_workers": num_workers,
+            "image_embeddings_dim": embeddings_dim,
+            "image_embeddings_reducer": embeddings_reducer,
+            "write_full_embeddings": write_full_embeddings,
+        },
+    )
+    on_run(str(run.url))
     on_status(f"3LC Run created: {run_name}")
     on_status(f"Run URL: {run.url}")
 
@@ -835,6 +921,7 @@ def _collect_metrics(
             batch_size=batch_size,
             shuffle=False,
             num_workers=num_workers,
+            worker_init_fn=reader_initializer(),
             pin_memory=True,
         )
 

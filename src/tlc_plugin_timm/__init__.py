@@ -118,10 +118,23 @@ class TimmPlugin(ComputePlugin):
         # self-contained (SDK guide, "Run-body conventions for remote workers"). The
         # store lookup stays as the fallback for older fragments / direct API calls.
         config = _config_from_inline(params_in.get("project_config"), log=ctx.log)
+        if "project_config" in params_in and config is None:
+            ctx.fail("Invalid project_config; choose a valid configuration")
         if config is None and config_id:
             config = config_store().get_config(config_id)
         if config is None:
             ctx.fail("Config not found" if config_id else "project_config is required")
+
+        from tlc_plugin_timm.config_store import TimmConfig
+        from tlc_plugin_timm.job_contract import contract
+
+        try:
+            native_config = dataclasses.asdict(config)
+            # Applied by the SDK worker around run_job; never a trainer option.
+            native_config["params"].pop("_alias_overrides", None)
+            config = TimmConfig(**contract().normalize(native_config))
+        except ValueError as error:
+            ctx.fail(str(error))
 
         mode = config.mode or "train"
         mode_label = "Collection" if mode == "collect" else "Training"
@@ -170,7 +183,7 @@ class TimmPlugin(ComputePlugin):
             "epoch_times": [],
         }
 
-        def _build_timing(epoch: int, total_epochs: int) -> dict[str, Any]:
+        def _build_timing(completed_epochs: float, total_epochs: int) -> dict[str, Any]:
             now = time.monotonic()
             elapsed = now - _timing["job_start"]
             result: dict[str, Any] = {"elapsed_s": round(elapsed, 1)}
@@ -178,7 +191,7 @@ class TimmPlugin(ComputePlugin):
             if epoch_times:
                 avg_epoch = sum(epoch_times) / len(epoch_times)
                 result["avg_epoch_s"] = round(avg_epoch, 1)
-                remaining = total_epochs - epoch
+                remaining = total_epochs - completed_epochs
                 result["eta_s"] = round(avg_epoch * remaining, 1) if remaining > 0 else 0
             return result
 
@@ -193,7 +206,10 @@ class TimmPlugin(ComputePlugin):
                 _timing["epoch_times"].append(now - _timing["epoch_start"])
                 _timing["epoch_start"] = now
 
-            timing = _build_timing(epoch, total_epochs)
+            phase = metrics.get("phase", "")
+            fraction = max(0.0, min(1.0, float(metrics.get("batch_frac", 0))))
+            epoch_fraction = (0.8 * fraction if phase == "train" else 0.8 + 0.2 * fraction) if is_batch else 1.0
+            timing = _build_timing(epoch - 1 + epoch_fraction, total_epochs)
 
             # Plugin-specific event — carries the rich (training) payload the /timm
             # UI listens for. The frontend treats this as opaque.
@@ -212,11 +228,15 @@ class TimmPlugin(ComputePlugin):
             progress_raw: dict[str, Any] = {
                 "epoch": epoch,
                 "total_epochs": total_epochs,
+                "phase": phase,
+                "batch_frac": epoch_fraction,
                 "metrics": merged,
                 "timing": timing,
             }
             generic = epoch_progress(progress_raw, step_label="epoch")
             if generic:
+                if is_batch:
+                    generic["label"] += f" · batch {metrics.get('batch', 0)}/{metrics.get('total_batches', 0)}"
                 ctx.progress(
                     percent=float(generic.get("percent", 0)),
                     label=str(generic.get("label", "")),
@@ -225,10 +245,11 @@ class TimmPlugin(ComputePlugin):
 
         def on_status(message: str) -> None:
             ctx.log(message)
-            is_collecting = "Collecting" in message or "Reducing" in message
-            if is_collecting:
-                # Generic progress for the collect phase (no training fields).
-                ctx.progress(percent=100.0, label="Collecting metrics")
+            is_collecting = message.startswith(("Collecting", "Reducing", "Fitting", "Transforming", "Storing"))
+            if is_collecting or message.startswith(("Loading", "Creating model", "Starting training")):
+                # Collection duration is unknown. Keep its actual stage visible;
+                # 100% here wrongly suggests the job and its artifacts are ready.
+                ctx.progress(percent=-1.0, label=message)
             ctx.emit(
                 "job_status",
                 {
@@ -243,6 +264,7 @@ class TimmPlugin(ComputePlugin):
 
         callbacks = {
             "on_epoch": on_epoch,
+            "on_run": ctx.result,
             "on_status": on_status,
             "is_cancelled": is_cancelled,
         }

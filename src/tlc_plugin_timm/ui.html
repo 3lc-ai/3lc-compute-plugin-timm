@@ -191,30 +191,26 @@
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Learning Rate</label>
-              <input type="number" id="tm-lr" class="form-control" value="0.001" min="0.00001" max="1.0" step="0.0001" data-param-id="lr">
+              <input type="number" id="tm-lr" class="form-control" value="0.001" min="1e-05" max="1" step="0.0001" data-param-id="lr">
             </div>
           </div>
           <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Weight Decay</label>
-              <input type="number" id="tm-wd" class="form-control" value="0.0001" min="0" max="1.0" step="0.0001" data-param-id="weight_decay">
+              <input type="number" id="tm-wd" class="form-control" value="0.0001" min="0" max="1" step="0.0001" data-param-id="weight_decay">
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Optimizer</label>
-              <select id="tm-optimizer" class="form-control" data-param-id="optimizer">
-                <option value="adamw">AdamW</option>
-                <option value="adam">Adam</option>
-                <option value="sgd">SGD</option>
-                <option value="lamb">LAMB</option>
-              </select>
+              <select id="tm-optimizer" class="form-control" data-param-id="optimizer"><option value="adamw" selected>AdamW</option>
+<option value="adam">Adam</option>
+<option value="sgd">SGD</option>
+<option value="lamb">LAMB</option></select>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Scheduler</label>
-              <select id="tm-scheduler" class="form-control" data-param-id="scheduler">
-                <option value="cosine">Cosine</option>
-                <option value="step">Step</option>
-                <option value="plateau">Plateau</option>
-              </select>
+              <select id="tm-scheduler" class="form-control" data-param-id="scheduler"><option value="cosine" selected>Cosine</option>
+<option value="step">Step</option>
+<option value="plateau">Plateau</option></select>
             </div>
             <div class="form-group" style="margin-bottom:0">
               <label class="form-label">Warmup Epochs</label>
@@ -228,33 +224,31 @@
               <div class="form-group" style="margin-bottom:0">
                 <label class="form-label">Auto Augment</label>
                 <select id="tm-autoaug" class="form-control" data-param-id="auto_augment"
-                        title="Automatic augmentation policy applied during training">
-                  <option value="" title="No automatic augmentation — only basic transforms (resize, flip, jitter)">None</option>
-                  <option value="rand-m9-mstd0.5" selected title="Randomly applies 2 of 14 transforms (rotate, shear, translate, etc.) at moderate intensity (magnitude 9/30)">RandAugment (m9)</option>
-                  <option value="rand-m15-mstd0.5" title="Same as RandAugment but stronger intensity (magnitude 15/30) — better for larger datasets and longer training">RandAugment (m15)</option>
-                  <option value="trivialaugment" title="Applies a single random transform at random intensity per image — simpler than RandAugment, no tuning needed, often equally effective">TrivialAugment</option>
-                </select>
+                        title="Automatic augmentation policy applied during training"><option value="" title="No automatic augmentation — only basic transforms (resize, flip, jitter)">None</option>
+<option value="rand-m9-mstd0.5" title="Randomly applies 2 of 14 transforms (rotate, shear, translate, etc.) at moderate intensity (magnitude 9/30)" selected>RandAugment (m9)</option>
+<option value="rand-m15-mstd0.5" title="Same as RandAugment but stronger intensity (magnitude 15/30) — better for larger datasets and longer training">RandAugment (m15)</option>
+<option value="trivialaugment" title="Applies a single random transform at random intensity per image — simpler than RandAugment, no tuning needed, often equally effective">TrivialAugment</option></select>
               </div>
               <div class="form-group" style="margin-bottom:0">
                 <label class="form-label">Random Erasing</label>
-                <input type="number" id="tm-reprob" class="form-control" value="0.0" min="0" max="1" step="0.05" data-param-id="reprob">
+                <input type="number" id="tm-reprob" class="form-control" value="0" min="0" max="1" step="0.05" data-param-id="reprob">
               </div>
               <div class="form-group" style="margin-bottom:0">
                 <label class="form-label">MixUp Alpha</label>
-                <input type="number" id="tm-mixup" class="form-control" value="0.0" min="0" max="1" step="0.1" data-param-id="mixup_alpha">
+                <input type="number" id="tm-mixup" class="form-control" value="0" min="0" max="1" step="0.1" data-param-id="mixup_alpha">
               </div>
               <div class="form-group" style="margin-bottom:0">
                 <label class="form-label">CutMix Alpha</label>
-                <input type="number" id="tm-cutmix" class="form-control" value="0.0" min="0" max="1" step="0.1" data-param-id="cutmix_alpha">
+                <input type="number" id="tm-cutmix" class="form-control" value="0" min="0" max="1" step="0.1" data-param-id="cutmix_alpha">
               </div>
             </div>
             <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px">
               <div style="display:flex;align-items:center;gap:5px">
-                <input type="checkbox" id="tm-hflip" checked style="accent-color:var(--accent);width:15px;height:15px" data-param-id="hflip">
+                <input type="checkbox" id="tm-hflip" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="hflip" checked>
                 <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-hflip').click()">Horizontal Flip</label>
               </div>
               <div style="display:flex;align-items:center;gap:5px">
-                <input type="checkbox" id="tm-color-jitter" checked style="accent-color:var(--accent);width:15px;height:15px" data-param-id="color_jitter">
+                <input type="checkbox" id="tm-color-jitter" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="color_jitter" checked>
                 <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-color-jitter').click()">Color Jitter</label>
               </div>
             </div>
@@ -298,21 +292,17 @@
         <div style="display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,240px),1fr));gap:10px;margin-top:8px">
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Embeddings Dim</label>
-            <select id="tm-embed-dim" class="form-control" data-param-id="image_embeddings_dim">
-              <option value="0">Disabled</option>
-              <option value="2" selected>2D</option>
-              <option value="3">3D</option>
-            </select>
+            <select id="tm-embed-dim" class="form-control" data-param-id="image_embeddings_dim"><option value="0">Disabled</option>
+<option value="2" selected>2D</option>
+<option value="3">3D</option></select>
           </div>
           <div class="form-group" style="margin-bottom:0">
             <label class="form-label">Embeddings Reducer</label>
-            <select id="tm-embed-reducer" class="form-control" data-param-id="image_embeddings_reducer">
-              <option value="umap" selected>UMAP</option>
-              <option value="pacmap">PaCMAP</option>
-            </select>
+            <select id="tm-embed-reducer" class="form-control" data-param-id="image_embeddings_reducer"><option value="umap" selected>UMAP</option>
+<option value="pacmap">PaCMAP</option></select>
           </div>
           <div class="form-group plugin-field-wide" style="margin-bottom:0;display:flex;align-items:center;gap:6px;padding-top:18px">
-            <input type="checkbox" id="tm-full-embed" data-param-id="write_full_embeddings">
+            <input type="checkbox" id="tm-full-embed" data-param-id="write_full_embeddings" >
             <label for="tm-full-embed" style="font-size:11px;color:var(--text);cursor:pointer">Keep full (unreduced) embeddings</label>
           </div>
           <div class="form-group" style="margin-bottom:0">
@@ -326,23 +316,23 @@
         </div>
         <div style="display:flex;gap:14px;flex-wrap:wrap;align-items:center;margin-top:8px">
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-collect-loss" checked style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collect_loss">
+            <input type="checkbox" id="tm-collect-loss" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collect_loss" checked>
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-collect-loss').click()">Collect Loss</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-sampling-weights" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="sampling_weights">
+            <input type="checkbox" id="tm-sampling-weights" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="sampling_weights" >
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-sampling-weights').click()">Sampling Weights</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-exclude-zero-train" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="exclude_zero_weight_training">
+            <input type="checkbox" id="tm-exclude-zero-train" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="exclude_zero_weight_training" >
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-exclude-zero-train').click()">Exclude Zero (Train)</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-val-only" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_val_only">
+            <input type="checkbox" id="tm-val-only" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_val_only" >
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-val-only').click()">Val Only Collection</label>
           </div>
           <div style="display:flex;align-items:center;gap:5px">
-            <input type="checkbox" id="tm-disable-collection" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_disable">
+            <input type="checkbox" id="tm-disable-collection" style="accent-color:var(--accent);width:15px;height:15px" data-param-id="collection_disable" >
             <label class="text-sm" style="cursor:pointer" onclick="document.getElementById('tm-disable-collection').click()">Disable Collection</label>
           </div>
         </div>

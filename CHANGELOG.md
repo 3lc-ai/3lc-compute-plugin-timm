@@ -1,5 +1,10 @@
 # Changelog
 
+## 0.2.8
+
+- Share native operation validation and MCP schema generation; add drift checks.
+- Separate maintained UI sources from packaged fragments without changing the layout.
+
 All notable changes to `3lc-compute-plugin-timm` are documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.1.0/),
@@ -8,6 +13,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 ## [Unreleased]
 
 ### Changed
+
+- Publish the actual 3LC run URL immediately after creation during training and collection, so
+  Queue knows the real run name and the Hub can show progress in the matching run row.
 
 - Accepts plugin SDK 0.6 (`3lc-compute-plugin-sdk<0.7.0`), so the plugin's workers get SDK 0.6's
   worker: a job's outcome survives a controller that disconnects or restarts mid-run.

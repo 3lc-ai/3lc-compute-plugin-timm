@@ -55,3 +55,16 @@ Run the Release workflow manually for a verified build artifact. Set `publish=tr
 upload it to the private staging index; publishing is disabled by default. Distribution and manifest
 versions receive the same timestamp, run and attempt suffix. Public PyPI publishing remains
 a separate `v*` tag flow.
+
+### UI and MCP execution contract
+
+The module UI and MCP call the same native routes and job implementation. The
+maintained configuration contract is `src/tlc_plugin_timm/job_contract.py`;
+`mcp-tools.json` is generated package data, not a separate execution path.
+Regenerate it with `python -m tlc_plugin_timm.job_contract` and verify it with
+`python -m tlc_plugin_timm.job_contract --check`. Contract tests run as part of pytest.
+
+UI markup, styles and JavaScript live under the package's `ui/` directory.
+Run `python tools/build_ui.py` after editing them; `--check` verifies that the
+packaged `ui.html` matches. The served fragment stays self-contained. Native job
+validation applies the same defaults and field constraints advertised by MCP.

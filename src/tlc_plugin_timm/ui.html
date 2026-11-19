@@ -18,6 +18,17 @@
   box-shadow: 0 4px 12px rgba(0,0,0,0.12); display: none;
 }
 .tm-model-dropdown.open { display: block; }
+.tm-model-status {
+  display: flex; align-items: center; gap: 8px;
+  padding: 12px; color: var(--text-muted); font-size: 11px;
+}
+.tm-model-spinner {
+  width: 12px; height: 12px; flex-shrink: 0;
+  border: 2px solid var(--border-light); border-top-color: var(--accent);
+  border-radius: 50%; animation: tm-model-spin .8s linear infinite;
+}
+@keyframes tm-model-spin { to { transform: rotate(360deg); } }
+@media (prefers-reduced-motion: reduce) { .tm-model-spinner { animation: none; } }
 .tm-model-item {
   padding: 6px 12px; cursor: pointer; font-size: 11px;
   display: flex; align-items: center; gap: 8px;
@@ -420,6 +431,8 @@ var tmSocket = null;
 var tmPresets = null;           // the SDK's preset bar (_tlcPluginPresets), once mounted
 var _tmInitialParams = null;    // the parameter fields as the page loaded: Default settings
 var tmModelsCache = null;       // [{name, family, popular}]
+var tmModelsLoading = false;
+var tmModelsLoadError = false;
 var tmDetectedTask = null;
 var tmDetectedImageCol = "";
 var tmDetectedLabelCol = "";
@@ -717,31 +730,90 @@ function _tmEnforceTaskMode(task) {
 
 // ── Model Search ─────────────────────────────────────────────
 function tmLoadModels() {
-  if (tmModelsCache !== null) return;
-  _tmFetchJson("/api/plugins/timm/models")
+  // Page preload, focus and typing share one request while the worker starts.
+  if (tmModelsCache !== null || tmModelsLoading) return;
+  tmModelsLoading = true;
+  tmModelsLoadError = false;
+  document.getElementById("tm-model-search").setAttribute("aria-busy", "true");
+  if (document.getElementById("tm-model-dropdown").classList.contains("open")) tmFilterModels();
+  _tmFetch("/api/plugins/timm/models")
+    .then(function(response) {
+      if (!response.ok) throw new Error("Model list request failed (" + response.status + ")");
+      return response.json();
+    })
     .then(function(data) {
-      tmModelsCache = Array.isArray(data) ? data : [];
+      if (!Array.isArray(data)) throw new Error("Invalid model list response");
+      tmModelsCache = data;
       tmLog("Loaded " + tmModelsCache.length + " timm models");
     })
-    .catch(function(e) { tmLog("Failed to load models: " + e); });
+    .catch(function(e) {
+      tmModelsLoadError = true;
+      tmLog("Failed to load models: " + e);
+    })
+    .finally(function() {
+      tmModelsLoading = false;
+      var search = document.getElementById("tm-model-search");
+      if (search) search.removeAttribute("aria-busy");
+      var dd = document.getElementById("tm-model-dropdown");
+      // Show the latest query without reopening a picker the user has dismissed.
+      if (dd && dd.classList.contains("open")) tmFilterModels();
+    });
 }
 
 function tmOpenModelDropdown() {
-  if (!tmModelsCache) { tmLoadModels(); return; }
+  if (tmModelsCache === null && !tmModelsLoadError) tmLoadModels();
   tmFilterModels();
+}
+
+function _tmModelStatus(message, loading, retry) {
+  var dd = document.getElementById("tm-model-dropdown");
+  dd.innerHTML = "";
+  var row = document.createElement("div");
+  row.className = "tm-model-status";
+  row.setAttribute("role", "status");
+  if (loading) {
+    var spinner = document.createElement("span");
+    spinner.className = "tm-model-spinner";
+    spinner.setAttribute("aria-hidden", "true");
+    row.appendChild(spinner);
+  }
+  var text = document.createElement("span");
+  text.textContent = message;
+  row.appendChild(text);
+  if (retry) {
+    var button = document.createElement("button");
+    button.type = "button";
+    button.className = "btn btn-sm btn-secondary";
+    button.textContent = "Retry";
+    button.onclick = function(event) {
+      event.stopPropagation();
+      tmLoadModels();
+    };
+    row.appendChild(button);
+  }
+  dd.appendChild(row);
+  dd.classList.add("open");
 }
 
 function tmFilterModels() {
   var dd = document.getElementById("tm-model-dropdown");
   var query = document.getElementById("tm-model-search").value.trim().toLowerCase();
 
-  if (!tmModelsCache) { dd.classList.remove("open"); return; }
+  if (tmModelsCache === null) {
+    _tmModelStatus(tmModelsLoadError ? "Couldn’t load models." : "Loading models…",
+                   !tmModelsLoadError, tmModelsLoadError);
+    return;
+  }
 
   var filtered = tmModelsCache;
   if (query) {
     filtered = tmModelsCache.filter(function(m) {
       return m.name.toLowerCase().indexOf(query) !== -1 || m.family.toLowerCase().indexOf(query) !== -1;
     });
+  }
+  if (!filtered.length) {
+    _tmModelStatus(query && tmModelsCache.length ? "No models match your search." : "No models available.");
+    return;
   }
 
   // Limit display

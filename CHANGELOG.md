@@ -7,6 +7,9 @@ and this project adheres to [Semantic Versioning](https://semver.org/spec/v2.0.0
 
 ## [Unreleased]
 
+- Derive the output project when the primary table changes; keep same-project settings, reset defaults across projects with Undo, and preserve explicit saved presets.
+
+
 ### Changed
 
 - Accepts plugin SDK 0.6 (`3lc-compute-plugin-sdk<0.7.0`), so the plugin's workers get SDK 0.6's

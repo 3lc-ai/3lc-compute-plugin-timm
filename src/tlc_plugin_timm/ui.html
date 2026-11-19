@@ -975,7 +975,8 @@ function _tmRestoreParams(params) {
 
 // Fill the form from a preset's values. Resolves once the task is detected and the model's info
 // is in, so the preset bar compares the form only then.
-function tmApplyFormData(values) {
+function tmApplyFormData(values, resolvedTable) {
+  ++_tmTableRead; clearTimeout(_tmDetectDebounce);
   values = values || {};
   var params = values.params || {};
   document.getElementById("tm-run-name").value = values.run_name || "";
@@ -996,12 +997,15 @@ function tmApplyFormData(values) {
   var model = values.model_name || "";
   // The train table decides the task and the columns, and the 3LC project when none is set; the
   // preset's own stand while the table cannot be read (Start then says so).
-  var detect = document.getElementById("tm-train-url").value.trim() ? tmDetectTask() : Promise.resolve(false);
+  var detect = document.getElementById("tm-train-url").value.trim() ? tmDetectTask(resolvedTable) : Promise.resolve(false);
+  var read = _tmTableRead;
   return detect.then(function() {
+    if (read !== _tmTableRead) return;
     if (model) return tmSelectModel(model);
     document.getElementById("tm-model-search").value = "";
     document.getElementById("tm-model-info").textContent = "";
   }).then(function() {
+    if (read !== _tmTableRead) return;
     // The model's info sets the image size; the preset's parameters come after, so they win.
     _tmRestoreParams(params);
     tmGate();
@@ -1020,6 +1024,7 @@ function tmInitPresets() {
     defaults: tmDefaultFormData,
     inputs: ["train_table_url", "val_table_url"],
     contextInputs: tmContextInputs,
+    tableContext: {input: "train_table_url", project: "project_name", preserve: ["mode"]},
     autoName: tmAutoName,
     summary: tmPresetSummary,
   });
@@ -1057,7 +1062,9 @@ function tmCollectFormData() {
 // ── Task Detection ───────────────────────────────────────────
 var _tmDetectDebounce = null;
 
+var _tmTableRead = 0;
 function tmOnTrainTableChange() {
+  _tmTableRead++;
   // Another table: its task and columns are unknown until detection answers, and the previous
   // table's must not ride along in a run. Start waits for the answer, debounce included.
   var url = document.getElementById("tm-train-url").value.trim();
@@ -1076,7 +1083,8 @@ function tmOnTrainTableChange() {
 // Detect the task and the columns from the train table; resolves true when it answered. Fills the
 // 3LC project when none is set. A table that cannot be read leaves the task and columns as they
 // are and sets tmTaskError.
-function tmDetectTask() {
+function tmDetectTask(resolvedTable) {
+  var read = ++_tmTableRead;
     var url = document.getElementById("tm-train-url").value.trim();
     tmTaskError = "";
     if (!url) {
@@ -1092,7 +1100,7 @@ function tmDetectTask() {
     document.getElementById("tm-task-badge").textContent = "detecting...";
     tmGate();
     // An answer for a table no longer in the field is dropped: that field's own detection answers.
-    var current = function() { return document.getElementById("tm-train-url").value.trim() === url; };
+    var current = function() { return read === _tmTableRead && document.getElementById("tm-train-url").value.trim() === url; };
     var failed = function(error) {
       tmDetecting = false;
       tmTaskError = error;
@@ -1101,41 +1109,47 @@ function tmDetectTask() {
       return false;
     };
 
-    return _tmPost("/api/plugins/timm/detect-task", { url: url })
+    return (resolvedTable && resolvedTable.url === url ? Promise.resolve(resolvedTable.info)
+      : _tmPost("/api/plugins/timm/detect-task", { url: url }))
       .then(function(data) {
         if (!current()) return false;
         if (!data || data.error || !data.task) {
           return failed(String((data && (data.error || data.detail)) || "No task in the answer."));
         }
-        tmDetecting = false;
-        tmDetectedTask = data.task;
-        tmDetectedImageCol = data.image_column || "";
-        tmDetectedLabelCol = data.label_column || "";
+        var transition = tmPresets && tmPresets.tableResolved
+          ? tmPresets.tableResolved(url, data) : Promise.resolve(false);
+        return transition.then(function(handled) {
+          if (handled || !current()) return false;
+          tmDetecting = false;
+          tmDetectedTask = data.task;
+          tmDetectedImageCol = data.image_column || "";
+          tmDetectedLabelCol = data.label_column || "";
 
-        _tmSetTaskBadge(data.task, data.num_classes ? data.num_classes + " classes" : "");
-        document.getElementById("tm-image-col").textContent = data.image_column || "--";
-        document.getElementById("tm-label-col").textContent = data.label_column || "--";
-        document.getElementById("tm-num-classes").textContent = data.num_classes ? " (" + data.num_classes + " classes)" : "";
+          _tmSetTaskBadge(data.task, data.num_classes ? data.num_classes + " classes" : "");
+          document.getElementById("tm-image-col").textContent = data.image_column || "--";
+          document.getElementById("tm-label-col").textContent = data.label_column || "--";
+          document.getElementById("tm-num-classes").textContent = data.num_classes ? " (" + data.num_classes + " classes)" : "";
 
-        // Show class names
-        var classEl = document.getElementById("tm-class-names");
-        if (data.class_names && data.class_names.length > 0 && data.class_names.length <= 30) {
-          classEl.textContent = data.class_names.join(", ");
-        } else if (data.class_names && data.class_names.length > 30) {
-          classEl.textContent = data.class_names.slice(0, 30).join(", ") + " … +" + (data.class_names.length - 30) + " more";
-        } else {
-          classEl.textContent = "";
-        }
+          // Show class names
+          var classEl = document.getElementById("tm-class-names");
+          if (data.class_names && data.class_names.length > 0 && data.class_names.length <= 30) {
+            classEl.textContent = data.class_names.join(", ");
+          } else if (data.class_names && data.class_names.length > 30) {
+            classEl.textContent = data.class_names.slice(0, 30).join(", ") + " … +" + (data.class_names.length - 30) + " more";
+          } else {
+            classEl.textContent = "";
+          }
 
-        // Auto-set mode based on task: feature_extraction → collect only
-        _tmEnforceTaskMode(data.task);
+          // Auto-set mode based on task: feature_extraction → collect only
+          _tmEnforceTaskMode(data.task);
 
-        if (data.project_name) {
-          var projEl = document.getElementById("tm-3lc-project");
-          if (!projEl.value.trim()) projEl.value = data.project_name;
-        }
-        tmGate();
-        return true;
+          if (data.project_name) {
+            var projEl = document.getElementById("tm-3lc-project");
+            if (!projEl.value.trim()) projEl.value = data.project_name;
+          }
+          tmGate();
+          return true;
+        });
       })
       .catch(function(e) {
         return current() ? failed(String(e)) : false;

@@ -27,10 +27,11 @@ def detect_task(table_url: str) -> dict[str, Any]:
     try:
         import tlc
         from tlc_plugin_sdk.shared.modality import detect_modality_from_table
+        from tlc_plugin_sdk.shared.table_context import table_project_context
 
         table = tlc.Table.from_url(table_url)
         info = detect_modality_from_table(table)
-        project_name = getattr(table, "project_name", "") or ""
+        project = table_project_context(table)
     except Exception as e:
         return {
             "task": "unknown",
@@ -62,6 +63,6 @@ def detect_task(table_url: str) -> dict[str, Any]:
         "label_column": label_column,
         "num_classes": num_classes,
         "class_names": class_names,
-        "project_name": project_name,
+        **project,
         "details": f"Detected: {task}" + (f" ({num_classes} classes)" if num_classes else ""),
     }
